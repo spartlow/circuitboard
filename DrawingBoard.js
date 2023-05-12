@@ -62,15 +62,6 @@
   };
 })();
 
-/***********************************************
- *
- * Drawing Board - logic board function
- * TODO: Add adder box (maybe generic box gate?)
- * TODO: change import to add source/targets instead of replacing inputs/outputs
- * TODO: Add save/load
- * TODO: Add multiple select (CNTL and select box)
- *
- ***********************************************/
 var ON_COLOR = '#51C2C6';
 //var ON_COLOR = '#F00';
 var ON_BACKGROUND = ON_COLOR;
@@ -100,6 +91,13 @@ function getMousePos(canvas, evt) {
     y: evt.clientY - rect.top
   };
 }
+/***********************************************
+ * DrawingBoard - logic board function
+ * TODO: Add adder box (maybe generic box gate?)
+ * TODO: change import to add source/targets instead of replacing inputs/outputs
+ * TODO: Add save/load
+ * TODO: Add multiple select (CNTL and select box)
+ ***********************************************/
 function DrawingBoard(node) {
   var board = this; // needed for scoping
   this.version = 0.1;
@@ -521,6 +519,10 @@ function DrawingBoard(node) {
   }
 }
 
+/***********************************************
+ * drawingBoardMenu 
+ * Creates and controls menu for drawing board
+ ***********************************************/
 function drawingBoardMenu(board) {
   this.addButton = function (content, action) {
     var button = document.createElement('div');
@@ -548,6 +550,9 @@ function drawingBoardMenu(board) {
 
 
 }
+/***********************************************
+ * partsMenu 
+ ***********************************************/
 function partsMenu(board) {
   this.addButton = function (content, action) {
     var menu = this;
@@ -669,6 +674,9 @@ function partsMenu(board) {
   });
   board.node.appendChild(this.node);
 }
+/***********************************************
+ * ComponentMenu 
+ ***********************************************/
 var ComponentMenu = function (board, parentNode) {
   this.addButton = function (content, action) {
     var button = {};
@@ -722,6 +730,10 @@ var ComponentMenu = function (board, parentNode) {
   parentNode.appendChild(this.node);
 }
 
+/***********************************************
+ * Component class
+ * Virtual class for all board components
+ ***********************************************/
 var Component = Class.extend({
   init: function (board) {
     this.board = board;
@@ -1019,6 +1031,10 @@ var Component = Class.extend({
     this.board.removeComponent(this);
   }
 });
+/***********************************************
+ * Label class
+ * A text label
+ ***********************************************/
 var Label = Component.extend({
   init: function (board) {
     this._super(board);
@@ -1057,6 +1073,10 @@ var Label = Component.extend({
     return this;
   }
 });
+/***********************************************
+ * Wire class
+ * Connects and transmits data between components
+ ***********************************************/
 var Wire = Component.extend({
   init: function (board) {
     this._super(board);
@@ -1153,6 +1173,10 @@ var Wire = Component.extend({
     return null; // don't export wires.  
   }
 });
+/***********************************************
+ * Connection class
+ * An individual point, typically for another component
+ ***********************************************/
 var Connection = Component.extend({
   init: function (board, name) {
     this._super(board);
@@ -1262,6 +1286,10 @@ var Connection = Component.extend({
     return this._super(obj);
   }
 });
+/***********************************************
+ * Source class
+ * A source of data to the board.
+ ***********************************************/
 var Source = Component.extend({ // $$$ make this a Gate child
   init: function (board) {
     this._super(board);
@@ -1386,6 +1414,10 @@ var Source = Component.extend({ // $$$ make this a Gate child
   }
 });
 // TODO: Make ParentComponent class that has inputs and outputs so Component class doesn't need to know about it.
+/***********************************************
+ * Display class
+ * A display, which shows the value of data
+ ***********************************************/
 var Display = Component.extend({
   init: function (board) {
     this._super(board);
@@ -1542,6 +1574,10 @@ var Display = Component.extend({
     return this._super(obj);
   }
 });
+/***********************************************
+ * Gate class
+ * Virtual class. A container of components with logic
+ ***********************************************/
 var Gate = Component.extend({ // rename to ParentComponent???
   init: function (board) {
     this._super(board);
@@ -1638,6 +1674,11 @@ var Gate = Component.extend({ // rename to ParentComponent???
     throw "Not implemented yet!"
   }
 });
+
+/***********************************************
+ * AndGate class
+ * AND gate with two binary inputs and one output
+ ***********************************************/
 var AndGate = Gate.extend({
   init: function (board) {
     this._super(board);
@@ -1678,6 +1719,10 @@ var AndGate = Gate.extend({
     return this;
   },
 });
+/***********************************************
+ * And3Gate class
+ * AND gate with three inputs and one output
+ ***********************************************/
 var And3Gate = AndGate.extend({
   init: function (board) {
     this._super(board);
@@ -1696,6 +1741,10 @@ var And3Gate = AndGate.extend({
     return this;
   }
 });
+/***********************************************
+ * OrGate class
+ * OR gate with two binary inputs and one output
+ ***********************************************/
 var OrGate = Gate.extend({
   init: function (board) {
     this._super(board);
@@ -1739,6 +1788,10 @@ var OrGate = Gate.extend({
     return this;
   },
 });
+/***********************************************
+ * Or3Gate class
+ * OR gate with three binary inputs and one output
+ ***********************************************/
 var Or3Gate = OrGate.extend({
   init: function (board) {
     this._super(board);
@@ -1757,6 +1810,10 @@ var Or3Gate = OrGate.extend({
     return this;
   }
 });
+/***********************************************
+ * NotGate class
+ * NOT gate with one binary input and one output
+ ***********************************************/
 var NotGate = Gate.extend({
   init: function (board) {
     this._super(board);
@@ -1812,6 +1869,10 @@ var NotGate = Gate.extend({
     return this;
   },
 });
+/***********************************************
+ * NandGate class
+ * NAND gate with two binary inputs and one output
+ ***********************************************/
 var NandGate = Gate.extend({
   init: function (board) {
     this._super(board);
@@ -1853,6 +1914,10 @@ var NandGate = Gate.extend({
     return this;
   },
 });
+/***********************************************
+ * NorGate class
+ * NOR gate with two binary inputs and one output
+ ***********************************************/
 var NorGate = Gate.extend({
   init: function (board) {
     this._super(board);
@@ -1897,6 +1962,10 @@ var NorGate = Gate.extend({
     return this;
   },
 });
+/***********************************************
+ * XorGate class
+ * XOR gate 2 in, 1 out
+ ***********************************************/
 var XorGate = Gate.extend({
   init: function (board) {
     this._super(board);
@@ -1948,6 +2017,10 @@ var XorGate = Gate.extend({
     return this;
   },
 });
+/***********************************************
+ * FullAddr class
+ * Full adder with three binary inputs and two outputs
+ ***********************************************/
 var FullAdder = Gate.extend({
   init: function (board) {
     this._super(board);
@@ -2026,6 +2099,10 @@ var FullAdder = Gate.extend({
     return this;
   },
 });
+/***********************************************
+ * MuxGate class
+ * Multiplexer gate with selectable number of inputs
+ ***********************************************/
 var MuxGate = Gate.extend({
   init: function (board) {
     this._super(board);
@@ -2172,6 +2249,10 @@ var MuxGate = Gate.extend({
   }
 });
 
+/***********************************************
+ * Point function
+ * 
+ ***********************************************/
 function Point(x, y) {
   this.x = x;
   this.y = y;
@@ -2203,7 +2284,10 @@ function Point(x, y) {
     return newPoint;
   }
 }
-
+/***********************************************
+ * pad function
+ * Right justify number to the given length with specified pad char
+ ***********************************************/
 function pad(number, length, pad) {
   var str = '' + number;
   while (str.length < length) {
