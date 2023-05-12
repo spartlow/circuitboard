@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="DrawingBoard.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+function setupBoard(board) {
+  board.createMenu();
+  board.createPartsMenu();
+}
+//]]>
+</script>
+</head>
+<body onload="buildDrawingBoards();">
+<h1>Drawing Board</h2>
+<div class="drawingBoard" data-board-setup="setupBoard" style="border: solid 1px; height: 800px; width: 1200px; display: inline-block;">
+</div>
+<div id="drawingBoardHoverText" style="position: absolute; top: 0px; right: 0px;"></div>
+<div id="jsonArea" style=""></div>
+</body>
+</html>

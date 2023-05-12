@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="DrawingBoard.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+function setupBoard1(board) {
+  board.createMenu();
+
+  var source1 = new Source(board).setLocation(5,7);
+  var source2 = new Source(board).setLocation(5,12);
+  var source3 = new Source(board).setLocation(5,17);
+  var source4 = new Source(board).setLocation(5,22);
+
+  var gateNot = new NotGate(board).setLocation(10,10);
+  var gateAnd = new AndGate(board).setLocation(20,10);
+  var gateOr = new OrGate(board).setLocation(20,15);
+
+  var dot1 = new Connection(board).setLocation(25,12);
+  var dot2 = new Connection(board).setLocation(25,17);
+
+  new Wire(board).addSource(source1.outputs['X']).addTarget(gateNot.inputs['A']);
+  new Wire(board).addSource(gateNot.outputs['X']).addTarget(gateAnd.inputs['A']);
+  new Wire(board).addSource(source2.outputs['X']).addTarget(gateAnd.inputs['B']);
+  new Wire(board).addSource(source3.outputs['X']).addTarget(gateOr.inputs['A']);
+  new Wire(board).addSource(source4.outputs['X']).addTarget(gateOr.inputs['B']);
+  new Wire(board).addSource(gateAnd.outputs['X']).addTarget(dot1);
+  new Wire(board).addSource(gateOr .outputs['X']).addTarget(dot2);
+}
+function setupBoard2(board) {
+  // start with an empty board
+  board.unit = 15;
+  board.createMenu();
+}
+//]]>
+</script>
+</head>
+<body onload="buildDrawingBoards();">
+<h1>Tester</h2>
+<div class="drawingBoard" data-board-setup="setupBoard1" style="border: solid 1px; height: 400px; width: 400px; display: inline-block;">
+</div>
+<div class="drawingBoard" data-board-setup="setupBoard2" style="border: solid 1px; height: 400px; width: 400px; margin: 10px; display:inline-block;">
+</div>
+<div id="drawingBoardHoverText" style="position: absolute; top: 0px; right: 0px;"></div>
+</body>
+</html>
