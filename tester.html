@@ -4,8 +4,10 @@
 <script src="DrawingBoard.js"></script>
 <script type="text/javascript">
 //<![CDATA[
+var sourceBoard;
 function setupBoard1(board) {
   board.createMenu();
+  sourceBoard = board;
 
   var source1 = new Source(board).setLocation(5,7);
   var source2 = new Source(board).setLocation(5,12);
@@ -35,12 +37,13 @@ function setupBoard2(board) {
 //]]>
 </script>
 </head>
-<body onload="buildDrawingBoards();">
+<body onload="buildDrawingBoards(); document.getElementById('jsonArea').innerHTML = sourceBoard.export2()">
 <h1>Tester</h2>
 <div class="drawingBoard" data-board-setup="setupBoard1" style="border: solid 1px; height: 400px; width: 400px; display: inline-block;">
 </div>
 <div class="drawingBoard" data-board-setup="setupBoard2" style="border: solid 1px; height: 400px; width: 400px; margin: 10px; display:inline-block;">
 </div>
 <div id="drawingBoardHoverText" style="position: absolute; top: 0px; right: 0px;"></div>
+<div id="jsonArea"></div>
 </body>
 </html>

@@ -370,7 +370,7 @@ function DrawingBoard(node) {
     board.draw();
   };
   this.toJSON = function () {
-    return this.export2();
+    //return this.export2();
     var me = {};
     me.components = [];
     for (x in this) {
@@ -408,6 +408,7 @@ function DrawingBoard(node) {
     };
   this.export2 = function () {
     var obj = {};
+    obj.type = "DrawingBoard";
     obj.version = this.version;
     obj.unit = this.unit;
     obj.delay = this.delay;
@@ -535,7 +536,8 @@ function drawingBoardMenu(board) {
   this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 0; left: 0; display: inline-block; width: ' + board.node.clientWidth + 'px; height: 50px;');
   this.node.innerHTML = 'Menu:';
   this.addButton('Export', function (e) {
-    var json = JSON.stringify(board);
+    //var json = JSON.stringify(board);
+    json = board.export2();
     //var txt = window.prompt ("Copy to clipboard: Ctrl+C, Enter", json);
     //if (txt!=json) alert(''+json.length+' -> '+txt.length);
     document.getElementById('jsonArea').innerHTML = json;
@@ -899,17 +901,15 @@ var Component = Class.extend({
   },
   export2: function () {
     if (this.parent) return null; // The parent will include whatever it needs saved
-    var obj = {};
+    obj = {};
+    obj.className = this.className;
     obj.data = this.data;
-    if (this.targets.length > 0) {
-      obj.targets = [];
-
-    }
-    this.sources = [];
-
+    obj.inputs = this.convertNamedCompsToIdObj(this.inputs);
+    obj.outputs = this.convertNamedCompsToIdObj(this.outputs);
+    return obj;
   },
   toJSON: function () {
-    return this.export2();
+    //return this.export2();
     var me = {};
     for (x in this) {
       me[x] = this[x];
@@ -993,6 +993,24 @@ var Component = Class.extend({
       }
     }
     return arr;
+  },
+  convertNamedCompsToIdObj: function (namedComps) {
+    var obj = {};
+    for (var name in namedComps) {
+      obj[name] = { targets: [], sources: [] };
+      for (var x in namedComps[name].targets) {
+        if (namedComps[name].isInput) continue;
+        obj[name].targets.push(namedComps[name].targets[x].id);
+      }
+      for (var x in namedComps[name].sources) {
+        if (namedComps[name].isOutput) throw "Output with sources?";
+        obj[name].targets.push(namedComps[name].sources[x].id);
+      }
+    }
+    return obj;
+  },
+  convertIdObjToNamedComps: function () {
+    throw "Not implemented yet!"
   },
   deleteChildren: function () {
     if (this.inputs) {
@@ -1278,6 +1296,7 @@ var Connection = Component.extend({
   },
   export2: function () {
     if (this.parent) return null;
+    return this._super();
   },
   import: function (obj) {
     if (this.parent) {
@@ -1641,6 +1660,7 @@ var Gate = Component.extend({ // rename to ParentComponent???
     obj = {};
     obj.inputs = this.convertNamedCompsToIdObj(this.inputs);
     obj.outputs = this.convertNamedCompsToIdObj(this.outputs);
+    return obj;
   },
   toJSON: function () {
     me = this._super();
@@ -1654,24 +1674,6 @@ var Gate = Component.extend({ // rename to ParentComponent???
     delete obj.inputs; // don't let Component.import copy back in
     delete obj.outputs; // don't let Component.import copy back in
     return this._super(obj);
-  },
-  convertNamedCompsToIdObj: function (namedComps) {
-    var obj = {};
-    for (var name in namedComps) {
-      obj[x] = { targets: [], sources: [] };
-      for (var x in namedComps[name].targets) {
-        if (namedComps[name].isInput) continue;
-        obj[name].targets.push(namedComps[name].targets[x].id);
-      }
-      for (var x in namedComps[name].sources) {
-        if (namedComps[name].isOutput) throw "Output with sources?";
-        obj[name].targets.push(namedComps[name].sources[x].id);
-      }
-    }
-    return obj;
-  },
-  convertIdObjToNamedComps: function () {
-    throw "Not implemented yet!"
   }
 });
 
