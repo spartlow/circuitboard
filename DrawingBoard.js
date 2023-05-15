@@ -903,9 +903,12 @@ var Component = Class.extend({
     if (this.parent) return null; // The parent will include whatever it needs saved
     obj = {};
     obj.className = this.className;
+    obj.id = this.id;
     obj.data = this.data;
     obj.inputs = this.convertNamedCompsToIdObj(this.inputs);
+    if (Object.keys(obj.inputs).length == 0) delete obj.inputs;
     obj.outputs = this.convertNamedCompsToIdObj(this.outputs);
+    if (Object.keys(obj.outputs).length == 0) delete obj.outputs;
     return obj;
   },
   toJSON: function () {
@@ -994,18 +997,30 @@ var Component = Class.extend({
     }
     return arr;
   },
+  /*
+   * Converts object such as:
+   *   {"A": {targets:[], sources:[connection1, connection2]},
+   *    "B": {targets:[], sources:[]},
+   *    "X": {targets:[connection3], sources:[]}}
+   * to:
+   *   {"A": ["id1","id2"],
+   *    "X": ["id3"]}
+   */
   convertNamedCompsToIdObj: function (namedComps) {
     var obj = {};
     for (var name in namedComps) {
-      obj[name] = { targets: [], sources: [] };
+      obj[name] = [];
       for (var x in namedComps[name].targets) {
-        if (namedComps[name].isInput) continue;
-        obj[name].targets.push(namedComps[name].targets[x].id);
+        if (namedComps[name].isInput) continue; // Input can target parent
+        id = namedComps[name].targets[x].id;
+        obj[name].push(id);
       }
       for (var x in namedComps[name].sources) {
         if (namedComps[name].isOutput) throw "Output with sources?";
-        obj[name].targets.push(namedComps[name].sources[x].id);
+        id = namedComps[name].sources[x].id;
+        obj[name].push(id);
       }
+      if (obj[name].length == 0) delete obj[name];
     }
     return obj;
   },
@@ -1656,10 +1671,12 @@ var Gate = Component.extend({ // rename to ParentComponent???
     }
     return this;
   },
-  export2: function () {
-    obj = {};
+  xexport2: function () {
+    var obj = {};
     obj.inputs = this.convertNamedCompsToIdObj(this.inputs);
+    if (Object.keys(obj.inputs).length == 0) delete obj.inputs;
     obj.outputs = this.convertNamedCompsToIdObj(this.outputs);
+    if (Object.keys(obj.outputs).length == 0) delete obj.outputs;
     return obj;
   },
   toJSON: function () {
