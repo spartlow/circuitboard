@@ -415,7 +415,7 @@ function DrawingBoard(node) {
     }
     return JSON.stringify(obj, null, " ");
   }
-  this.import2 = function (json) {
+  this.import2 = function (json) { // import DrawingBoard
     var origUnit = board.unit; // save this
     var obj = JSON.parse(json);
     this.importedBoard = obj;
@@ -900,9 +900,11 @@ var Component = Class.extend({
     obj = {};
     obj.className = this.className;
     obj.id = this.id;
-    obj.data = this.data;
-    obj.x = this.x;
-    obj.y = this.y;
+    if (this.data) obj.data = this.data;
+    if (this.x) obj.x = this.x / this.board.unit;
+    if (this.y) obj.y = this.y / this.board.unit;
+    if (this.rotation) obj.rotation = this.rotation;
+    if (this.height) obj.height = this.height / this.board.unit;
     return obj;
   },
   toJSON: function () {
@@ -926,6 +928,14 @@ var Component = Class.extend({
     me.inputs = this.convertCompArrayToIds(me.inputs);
     me.selects = this.convertCompArrayToIds(me.selects);
     return me;
+  },
+  import2: function (obj) { // import Component
+    if (obj.x || obj.y) {
+      this.setLocation(obj.x, obj.y);
+    }
+    if (obj.height) this.setHeight(obj.height);
+    if (obj.rotation) this.setRotation(obj.rotation);
+    if (obj.data) this.setData(obj.data);
   },
   import: function (obj) {
     for (var x in obj) {
