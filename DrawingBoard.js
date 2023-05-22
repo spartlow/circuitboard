@@ -370,7 +370,7 @@ function DrawingBoard(node) {
     board.draw();
   };
   this.toJSON = function () {
-    //return this.export2();
+    //return this.export();
     var me = {};
     me.components = [];
     for (x in this) {
@@ -402,11 +402,7 @@ function DrawingBoard(node) {
     delete me.pointerCoords;
     return me;
   },
-    this.export = function () {
-      this.version = "0.1";
-      return JSON.stringify(this, null, " ");
-    };
-  this.export2 = function () {
+  this.export = function () {
     var obj = {};
     obj.type = "DrawingBoard";
     obj.version = this.version;
@@ -414,7 +410,7 @@ function DrawingBoard(node) {
     obj.delay = this.delay;
     obj.components = [];
     for (var i = 0; i < this.components.length; i++) {
-      var compObj = this.components[i].export2();
+      var compObj = this.components[i].export();
       if (compObj) obj.components.push(compObj);
     }
     return JSON.stringify(obj, null, " ");
@@ -537,7 +533,7 @@ function drawingBoardMenu(board) {
   this.node.innerHTML = 'Menu:';
   this.addButton('Export', function (e) {
     //var json = JSON.stringify(board);
-    json = board.export2();
+    json = board.export();
     //var txt = window.prompt ("Copy to clipboard: Ctrl+C, Enter", json);
     //if (txt!=json) alert(''+json.length+' -> '+txt.length);
     document.getElementById('jsonArea').innerHTML = json;
@@ -899,7 +895,7 @@ var Component = Class.extend({
     }
     cxt.lineWidth = this.board.unit / 5;
   },
-  export2: function () {
+  export: function () {
     if (this.parent) return null; // The parent will include whatever it needs saved
     obj = {};
     obj.className = this.className;
@@ -910,7 +906,7 @@ var Component = Class.extend({
     return obj;
   },
   toJSON: function () {
-    //return this.export2();
+    //return this.export();
     var me = {};
     for (x in this) {
       me[x] = this[x];
@@ -1133,7 +1129,7 @@ var Wire = Component.extend({
     cxt.restore();
     return this;
   },
-  export2: function () {
+  export: function () {
     var obj = this._super();
     // Just export the location, will re-connect based on that when imported.
     obj.source = {"x": this.sources[0].x, "y": this.sources[0].y};
@@ -1244,7 +1240,7 @@ var Connection = Component.extend({
     cxt.restore();
     return this;
   },
-  export2: function () {
+  export: function () {
     if (this.parent) return null;
     return this._super();
   },
@@ -1373,7 +1369,7 @@ var Source = Component.extend({ // $$$ make this a Gate child
     cxt.restore();
     return this;
   },
-  export2: function() {
+  export: function() {
     var obj = this._super();
     obj.displayType = this.displayType;
     return obj;
@@ -1539,7 +1535,7 @@ var Display = Component.extend({
     cxt.restore();
     return this;
   },
-  export2: function() {
+  export: function() {
     var obj = this._super();
     obj.displayType = this.displayType;
     return obj;
