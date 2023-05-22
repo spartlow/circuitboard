@@ -449,8 +449,8 @@ function DrawingBoard(node) {
   }
   this.import = function (json) {
     //alert(json);
-    /* 
-     * Import the board settings 
+    /*
+     * Import the board settings
      */
     var origUnit = board.unit; // save this
     var obj = JSON.parse(json);
@@ -469,7 +469,7 @@ function DrawingBoard(node) {
       //obj.components[i].importTarget = comp; // just creating it already added to the components list
       comp.importedObj = obj.components[i]; // save for later
     }
-    //this.idPrefix = 'id'; 
+    //this.idPrefix = 'id';
     /*
      * Import setting of each component now that they all exist
      */
@@ -521,7 +521,7 @@ function DrawingBoard(node) {
 }
 
 /***********************************************
- * drawingBoardMenu 
+ * drawingBoardMenu
  * Creates and controls menu for drawing board
  ***********************************************/
 function drawingBoardMenu(board) {
@@ -553,7 +553,7 @@ function drawingBoardMenu(board) {
 
 }
 /***********************************************
- * partsMenu 
+ * partsMenu
  ***********************************************/
 function partsMenu(board) {
   this.addButton = function (content, action) {
@@ -677,7 +677,7 @@ function partsMenu(board) {
   board.node.appendChild(this.node);
 }
 /***********************************************
- * ComponentMenu 
+ * ComponentMenu
  ***********************************************/
 var ComponentMenu = function (board, parentNode) {
   this.addButton = function (content, action) {
@@ -855,7 +855,7 @@ var Component = Class.extend({
     if (this.height) return this.height;
     else return 0;
   },
-  /** Get coords relative to the Component. 
+  /** Get coords relative to the Component.
    * offset(.5,.5) will return the center of the object */
   offset: function (x, y) {
     /*
@@ -873,7 +873,7 @@ var Component = Class.extend({
       y = newy + height/2;
     }
     coords.x = this.x + x;
-    coords.y = this.y + y;    
+    coords.y = this.y + y;
     return coords;
     */
     var width = this.getWidth();
@@ -905,10 +905,8 @@ var Component = Class.extend({
     obj.className = this.className;
     obj.id = this.id;
     obj.data = this.data;
-    obj.inputs = this.convertNamedCompsToIdObj(this.inputs);
-    if (Object.keys(obj.inputs).length == 0) delete obj.inputs;
-    obj.outputs = this.convertNamedCompsToIdObj(this.outputs);
-    if (Object.keys(obj.outputs).length == 0) delete obj.outputs;
+    obj.x = this.x;
+    obj.y = this.y;
     return obj;
   },
   toJSON: function () {
@@ -954,78 +952,11 @@ var Component = Class.extend({
     }
     this.selected = false;
     if (this.parent) {
-      this.parent = this.board.getImportComponentById(obj.parent).importTarget;
+      //this.parent = this.board.getImportComponentById(obj.parent).importTarget;
     }
-    this.targets = this.convertIdArrayToComps(obj.targets);
-    this.sources = this.convertIdArrayToComps(obj.sources);
+    //this.targets = this.convertIdArrayToComps(obj.targets);
+    //this.sources = this.convertIdArrayToComps(obj.sources);
     return this;
-  },
-  convertCompArrayToIds: function (old) {
-    var arr = old;
-    if (old != null) {
-      if (Object.prototype.toString.call(old) === '[object Array]') {
-        arr = [];
-      } else {
-        arr = {};
-      }
-      for (var x in old) {
-        if (typeof (old[x]) == 'object') {
-          // @TODO BUG. This isn't handling connections correctly. It the connection ID is just the owners ID. Need to get a list of connections (targets or sources)
-          arr[x] = old[x].id;
-        } else {
-          arr[x] = old[x];
-        }
-      }
-    }
-    return arr;
-  },
-  convertIdArrayToComps: function (old) {
-    var arr = old;
-    if (arr != null) {
-      if (Object.prototype.toString.call(old) === '[object Array]') {
-        arr = [];
-      } else {
-        arr = {};
-      }
-      for (var x in old) {
-        if (typeof (old[x]) == 'string') {
-          arr[x] = this.board.getImportComponentById(old[x]).importTarget;
-        } else {
-          arr[x] = old[x];
-        }
-      }
-    }
-    return arr;
-  },
-  /*
-   * Converts object such as:
-   *   {"A": {targets:[], sources:[connection1, connection2]},
-   *    "B": {targets:[], sources:[]},
-   *    "X": {targets:[connection3], sources:[]}}
-   * to:
-   *   {"A": ["id1","id2"],
-   *    "X": ["id3"]}
-   */
-  convertNamedCompsToIdObj: function (namedComps) {
-    var obj = {};
-    for (var name in namedComps) {
-      obj[name] = [];
-      for (var x in namedComps[name].targets) {
-        if (namedComps[name].isInput) continue; // Input can target parent
-        id = namedComps[name].targets[x].id;
-        obj[name].push(id);
-      }
-      for (var x in namedComps[name].sources) {
-        if (namedComps[name].isOutput) throw "Output with sources?";
-        id = namedComps[name].sources[x].id;
-        obj[name].push(id);
-      }
-      if (obj[name].length == 0) delete obj[name];
-    }
-    return obj;
-  },
-  convertIdObjToNamedComps: function () {
-    throw "Not implemented yet!"
   },
   deleteChildren: function () {
     if (this.inputs) {
@@ -1203,7 +1134,11 @@ var Wire = Component.extend({
     return this;
   },
   export2: function () {
-    return null; // don't export wires.  
+    var obj = this._super();
+    // Just export the location, will re-connect based on that when imported.
+    obj.source = {"x": this.sources[0].x, "y": this.sources[0].y};
+    obj.target = {"x": this.targets[0].x, "y": this.targets[0].y};
+    return obj;
   }
 });
 /***********************************************
@@ -1438,10 +1373,15 @@ var Source = Component.extend({ // $$$ make this a Gate child
     cxt.restore();
     return this;
   },
+  export2: function() {
+    var obj = this._super();
+    obj.displayType = this.displayType;
+    return obj;
+  },
   import: function (obj) {
     this.deleteChildren();
-    this.inputs = this.convertIdArrayToComps(obj.inputs);
-    this.outputs = this.convertIdArrayToComps(obj.outputs);
+    //this.inputs = this.convertIdArrayToComps(obj.inputs);
+    //this.outputs = this.convertIdArrayToComps(obj.outputs);
     delete obj.inputs; // don't let Component.import copy back in
     delete obj.outputs; // don't let Component.import copy back in
     return this._super(obj);
@@ -1599,10 +1539,15 @@ var Display = Component.extend({
     cxt.restore();
     return this;
   },
+  export2: function() {
+    var obj = this._super();
+    obj.displayType = this.displayType;
+    return obj;
+  },
   import: function (obj) {
     this.deleteChildren();
-    this.inputs = this.convertIdArrayToComps(obj.inputs);
-    this.outputs = this.convertIdArrayToComps(obj.outputs);
+    //this.inputs = this.convertIdArrayToComps(obj.inputs);
+    //this.outputs = this.convertIdArrayToComps(obj.outputs);
     delete obj.inputs; // don't let Component.import copy back in
     delete obj.outputs; // don't let Component.import copy back in
     return this._super(obj);
@@ -1631,7 +1576,7 @@ var Gate = Component.extend({ // rename to ParentComponent???
     throw "Virtual function Gate.setData called.";
     //if (this.deleted) return this; // don't bother
     //console.log('Gate.setData: data='+data);
-    // gates don't have data themselves 
+    // gates don't have data themselves
     // but we'll reset outputs because an input changed
     return this;
   },
@@ -1670,14 +1615,6 @@ var Gate = Component.extend({ // rename to ParentComponent???
       this.outputs[i].draw(cxt);
     }
     return this;
-  },
-  xexport2: function () {
-    var obj = {};
-    obj.inputs = this.convertNamedCompsToIdObj(this.inputs);
-    if (Object.keys(obj.inputs).length == 0) delete obj.inputs;
-    obj.outputs = this.convertNamedCompsToIdObj(this.outputs);
-    if (Object.keys(obj.outputs).length == 0) delete obj.outputs;
-    return obj;
   },
   toJSON: function () {
     me = this._super();
@@ -2270,7 +2207,7 @@ var MuxGate = Gate.extend({
 
 /***********************************************
  * Point function
- * 
+ *
  ***********************************************/
 function Point(x, y) {
   this.x = x;
@@ -2283,7 +2220,7 @@ function Point(x, y) {
     return this;
   }
   this.getDistanceTo = function (point) {
-    return Math.sqrt(Math.pow(point.x - this.x, 2) + Math.pow(point.y - this.y, 2)); // good ol' A^2 + B^2 = C^2     
+    return Math.sqrt(Math.pow(point.x - this.x, 2) + Math.pow(point.y - this.y, 2)); // good ol' A^2 + B^2 = C^2
   }
   this.getRotatedCounterclockwise = function (rotation, center) {
     rotation = 2 * Math.PI - rotation;
