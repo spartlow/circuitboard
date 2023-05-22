@@ -5,6 +5,7 @@
 <script type="text/javascript">
 //<![CDATA[
 var sourceBoard;
+var targetBoard;
 function setupBoard1(board) {
   board.createMenu();
   sourceBoard = board;
@@ -31,13 +32,14 @@ function setupBoard1(board) {
 }
 function setupBoard2(board) {
   // start with an empty board
+  targetBoard = board;
   board.unit = 15;
   board.createMenu();
 }
 //]]>
 </script>
 </head>
-<body onload="buildDrawingBoards(); document.getElementById('jsonArea').innerHTML = sourceBoard.export();">
+<body onload="buildDrawingBoards(); document.getElementById('jsonArea').innerHTML = sourceBoard.export(); targetBoard.import2(document.getElementById('jsonArea').innerHTML);">
 <h1>Tester</h2>
 <div class="drawingBoard" data-board-setup="setupBoard1" style="border: solid 1px; height: 400px; width: 400px; display: inline-block;">
 </div>

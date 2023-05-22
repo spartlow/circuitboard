@@ -421,7 +421,7 @@ function DrawingBoard(node) {
     this.importedBoard = obj;
     this.unit = obj.unit;
     this.delay = obj.delay;
-    obj.components = []; // TBD do we really want to erase what's already here???
+    this.components = []; // TBD do we really want to erase what's already here???
     for (var i = 0; i < obj.components.length; i++) {
       var comp = new window[obj.components[i].className](this);
       comp.id = obj.components[i].id; // use the old ID
@@ -433,7 +433,7 @@ function DrawingBoard(node) {
      * Import setting of each component now that they all exist
      */
     for (var i = 0; i < obj.components.length; i++) {
-      compObj = this.components[i];
+      compObj = obj.components[i];
       if (compObj.targetComp) {
         comp.import2(compObj);
         //delete comp.importedObj; // no longer needed
@@ -442,6 +442,7 @@ function DrawingBoard(node) {
         throw "non-imported component found";
       }
     }
+    this.draw();
   }
   this.import = function (json) {
     //alert(json);
