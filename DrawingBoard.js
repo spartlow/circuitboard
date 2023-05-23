@@ -430,11 +430,26 @@ function DrawingBoard(node) {
       comp.importedObj = obj.components[i]; // save for debug
     }
     /*
-     * Import setting of each component now that they all exist
+     * Import setting of each non-wire component now that they all exist
      */
     for (var i = 0; i < obj.components.length; i++) {
       compObj = obj.components[i];
-      if (compObj.targetComp) {
+      if (compObj.targetComp && compObj.targetComp.className != "Wire") {
+        comp = compObj.targetComp;
+        comp.import2(compObj);
+        //delete comp.importedObj; // no longer needed
+        comp.imported = true;
+      } else if (comp.imported != true) {
+        throw "non-imported component found";
+      }
+    }
+    /*
+     * Now connect the wires.
+     */
+    for (var i = 0; i < obj.components.length; i++) {
+      compObj = obj.components[i];
+      if (compObj.targetComp && compObj.targetComp.className == "Wire") {
+        comp = compObj.targetComp;
         comp.import2(compObj);
         //delete comp.importedObj; // no longer needed
         comp.imported = true;
@@ -498,12 +513,15 @@ function DrawingBoard(node) {
       var comp = this.components[i];
       if (!comp.isConnection) continue;
       var distance = lineDistance(coord, comp);
-      if ((maxDistance == null || distance < maxDistance) && (closest == null || distance < minDistance) && isMatch(comp)) {
+      if ((maxDistance == null || distance <= maxDistance) && (closest == null || distance < minDistance) && isMatch(comp)) {
         closest = comp;
         minDistance = distance;
       }
     }
     return closest;
+  }
+  this.boardUnitCoordsToPixels = function (coords) {
+    return {"x": coords.x * this.unit, "y": coords.y * this.unit};
   }
   this.canvases[this.canvases.length - 1].addEventListener("mousemove", this.listener);
   this.canvases[this.canvases.length - 1].addEventListener("mousedown", this.listener);
@@ -852,6 +870,15 @@ var Component = Class.extend({
     if (this.height) return this.height;
     else return 0;
   },
+  getCoords: function (inPixels) {
+    var unit;
+    if (inPixels) unit = 1;
+    else unit = this.board.unit;
+    coords = {};
+    coords.x = Math.round(this.x / unit);
+    coords.y = Math.round(this.y / unit);
+    return coords;
+  },
   /** Get coords relative to the Component.
    * offset(.5,.5) will return the center of the object */
   offset: function (x, y) {
@@ -1143,8 +1170,18 @@ var Wire = Component.extend({
   export: function () {
     var obj = this._super();
     // Just export the location, will re-connect based on that when imported.
-    obj.source = {"x": this.sources[0].x, "y": this.sources[0].y};
-    obj.target = {"x": this.targets[0].x, "y": this.targets[0].y};
+    obj.source = this.sources[0].getCoords();
+    obj.target = this.targets[0].getCoords();
+    return obj;
+  },
+  import2: function (obj) { // import Wire
+    this._super(obj);
+    var srcCoords = this.board.boardUnitCoordsToPixels(obj.source);
+    var src = this.board.findClosestConnection(srcCoords, this.board.unit / 2, function (c) {return true});
+    this.addSource(src);
+    var tgtCoords = this.board.boardUnitCoordsToPixels(obj.target);
+    var tgt = this.board.findClosestConnection(tgtCoords, this.board.unit / 2, function (c) {return true});
+    this.addTarget(tgt);
     return obj;
   }
 });
