@@ -415,7 +415,7 @@ function DrawingBoard(node) {
     }
     return JSON.stringify(obj, null, " ");
   }
-  this.import2 = function (json) { // import DrawingBoard
+  this.import = function (json) { // import DrawingBoard
     var origUnit = board.unit; // save this
     var obj = JSON.parse(json);
     this.importedBoard = obj;
@@ -436,7 +436,7 @@ function DrawingBoard(node) {
       compObj = obj.components[i];
       if (compObj.targetComp && compObj.targetComp.className != "Wire") {
         comp = compObj.targetComp;
-        comp.import2(compObj);
+        comp.import(compObj);
         //delete comp.importedObj; // no longer needed
         comp.imported = true;
       } else if (comp.imported != true) {
@@ -450,7 +450,7 @@ function DrawingBoard(node) {
       compObj = obj.components[i];
       if (compObj.targetComp && compObj.targetComp.className == "Wire") {
         comp = compObj.targetComp;
-        comp.import2(compObj);
+        comp.import(compObj);
         //delete comp.importedObj; // no longer needed
         comp.imported = true;
       } else if (comp.imported != true) {
@@ -511,9 +511,9 @@ function drawingBoardMenu(board) {
     //if (txt!=json) alert(''+json.length+' -> '+txt.length);
     document.getElementById('jsonArea').innerHTML = json;
   });
-  this.addButton('Import', function (e) { board.import2(window.prompt("Paste import data", '{}')); });
+  this.addButton('Import', function (e) { board.import(window.prompt("Paste import data", '{}')); });
   this.addButton('Copy', function (e) { copiedData = JSON.stringify(board); });
-  this.addButton('Paste', function (e) { board.import2(copiedData); });
+  this.addButton('Paste', function (e) { board.import(copiedData); });
   this.addButton('Print', function (e) { var node = document.getElementById('jsonArea').innerHTML = copiedData; });
   this.addButton('-', function (e) { board.setUnit(Math.max(5, Math.round(board.unit * 0.75))); });
   this.addButton('+', function (e) { board.setUnit(Math.round(board.unit * 1.5)); });
@@ -911,7 +911,7 @@ var Component = Class.extend({
     me.selects = this.convertCompArrayToIds(me.selects);
     return me;
   },
-  import2: function (obj) { // import Component
+  import: function (obj) { // import Component
     if (obj.x || obj.y) {
       this.setLocation(obj.x, obj.y);
     }
@@ -1101,7 +1101,7 @@ var Wire = Component.extend({
     obj.target = this.targets[0].getCoords();
     return obj;
   },
-  import2: function (obj) { // import Wire
+  import: function (obj) { // import Wire
     this._super(obj);
     var srcCoords = this.board.boardUnitCoordsToPixels(obj.source);
     var src = this.board.findClosestConnection(srcCoords, this.board.unit / 2, function (c) {return true});
@@ -1343,7 +1343,7 @@ var Source = Component.extend({ // $$$ make this a Gate child
     obj.displayType = this.displayType;
     return obj;
   },
-  import2: function (obj) {
+  import: function (obj) {
     this._super(obj);
     this.displayType = obj.displayType;
   }
@@ -1505,7 +1505,7 @@ var Display = Component.extend({
     obj.displayType = this.displayType;
     return obj;
   },
-  import2: function (obj) {
+  import: function (obj) {
     this._super(obj);
     this.displayType = obj.displayType;
   }
