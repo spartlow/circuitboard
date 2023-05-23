@@ -459,52 +459,6 @@ function DrawingBoard(node) {
     }
     this.draw();
   }
-  this.import = function (json) {
-    //alert(json);
-    /*
-     * Import the board settings
-     */
-    var origUnit = board.unit; // save this
-    var obj = JSON.parse(json);
-    this.importedBoard = obj;
-    for (var x in obj) {
-      this[x] = obj[x];
-    }
-    /*
-     * Create stand-alone components mirroring those that we are importing
-     */
-    //this.idPrefix = 'xid'; // temporarily make new ids different
-    this.components = []; // clear out the array
-    for (var i = 0; i < obj.components.length; i++) {
-      var comp = new window[obj.components[i].className](this);
-      comp.id = obj.components[i].id; // use the old ID
-      //obj.components[i].importTarget = comp; // just creating it already added to the components list
-      comp.importedObj = obj.components[i]; // save for later
-    }
-    //this.idPrefix = 'id';
-    /*
-     * Import setting of each component now that they all exist
-     */
-    var extraComps = [];
-    for (var i = 0; i < this.components.length; i++) {
-      comp = this.components[i];
-      if (comp.importedObj) {
-        comp.import(comp.importedObj);
-        //delete comp.importedObj; // no longer needed
-        comp.imported = true;
-      } else if (comp.imported != true) {
-        throw "non-imported component found";
-        //extraComps.push(comp);
-      }
-    }
-    /* $$$ why are we removing these? are they children of imported comps? */
-    for (var i = 0; i < extraComps.length; i++) {
-      removeElementFromArray(this.components, extraComps[i]);
-    }
-    board.setUnit(origUnit);
-    board.draw();
-    return true;
-  }
   this.findClosestConnection = function (coord, maxDistance, isMatch) {
     if (isMatch == null) isMatch = function (comp) { return true };
     var closest = null;
@@ -557,9 +511,9 @@ function drawingBoardMenu(board) {
     //if (txt!=json) alert(''+json.length+' -> '+txt.length);
     document.getElementById('jsonArea').innerHTML = json;
   });
-  this.addButton('Import', function (e) { board.import(window.prompt("Paste import data", '{}')); });
+  this.addButton('Import', function (e) { board.import2(window.prompt("Paste import data", '{}')); });
   this.addButton('Copy', function (e) { copiedData = JSON.stringify(board); });
-  this.addButton('Paste', function (e) { board.import(copiedData); });
+  this.addButton('Paste', function (e) { board.import2(copiedData); });
   this.addButton('Print', function (e) { var node = document.getElementById('jsonArea').innerHTML = copiedData; });
   this.addButton('-', function (e) { board.setUnit(Math.max(5, Math.round(board.unit * 0.75))); });
   this.addButton('+', function (e) { board.setUnit(Math.round(board.unit * 1.5)); });
@@ -965,33 +919,6 @@ var Component = Class.extend({
     if (obj.rotation) this.setRotation(obj.rotation);
     if (obj.data) this.setData(obj.data);
   },
-  import: function (obj) {
-    for (var x in obj) {
-      switch (x) {
-        case 'board':
-          break;
-        case 'importedBoard':
-          break;
-        case 'importTarget':
-          break;
-        case 'importedObj':
-          break;
-        case 'targets':
-          break;
-        case 'sources':
-          break;
-        default:
-          this[x] = obj[x];
-      }
-    }
-    this.selected = false;
-    if (this.parent) {
-      //this.parent = this.board.getImportComponentById(obj.parent).importTarget;
-    }
-    //this.targets = this.convertIdArrayToComps(obj.targets);
-    //this.sources = this.convertIdArrayToComps(obj.sources);
-    return this;
-  },
   deleteChildren: function () {
     if (this.inputs) {
       for (var x in this.inputs) {
@@ -1028,7 +955,7 @@ var Component = Class.extend({
     }
     this.board.removeComponent(this);
   }
-});
+}); // End Component
 /***********************************************
  * Label class
  * A text label
@@ -1184,7 +1111,7 @@ var Wire = Component.extend({
     this.addTarget(tgt);
     return obj;
   }
-});
+}); // End Wire
 /***********************************************
  * Connection class
  * An individual point, typically for another component
@@ -1291,14 +1218,8 @@ var Connection = Component.extend({
   export: function () {
     if (this.parent) return null;
     return this._super();
-  },
-  import: function (obj) {
-    if (this.parent) {
-      throw "does this get called for children?";
-    }
-    return this._super(obj);
   }
-});
+}); // End Connection class
 /***********************************************
  * Source class
  * A source of data to the board.
@@ -1422,13 +1343,9 @@ var Source = Component.extend({ // $$$ make this a Gate child
     obj.displayType = this.displayType;
     return obj;
   },
-  import: function (obj) {
-    this.deleteChildren();
-    //this.inputs = this.convertIdArrayToComps(obj.inputs);
-    //this.outputs = this.convertIdArrayToComps(obj.outputs);
-    delete obj.inputs; // don't let Component.import copy back in
-    delete obj.outputs; // don't let Component.import copy back in
-    return this._super(obj);
+  import2: function (obj) {
+    this._super(obj);
+    this.displayType = obj.displayType;
   }
 });
 // TODO: Make ParentComponent class that has inputs and outputs so Component class doesn't need to know about it.
@@ -1588,15 +1505,11 @@ var Display = Component.extend({
     obj.displayType = this.displayType;
     return obj;
   },
-  import: function (obj) {
-    this.deleteChildren();
-    //this.inputs = this.convertIdArrayToComps(obj.inputs);
-    //this.outputs = this.convertIdArrayToComps(obj.outputs);
-    delete obj.inputs; // don't let Component.import copy back in
-    delete obj.outputs; // don't let Component.import copy back in
-    return this._super(obj);
+  import2: function (obj) {
+    this._super(obj);
+    this.displayType = obj.displayType;
   }
-});
+}); // End Display class
 /***********************************************
  * Gate class
  * Virtual class. A container of components with logic
@@ -1664,14 +1577,6 @@ var Gate = Component.extend({ // rename to ParentComponent???
     me = this._super();
     //delete me.dataFuncs;
     return me;
-  },
-  import: function (obj) {
-    this.deleteChildren();
-    this.inputs = this.convertIdArrayToComps(obj.inputs);
-    this.outputs = this.convertIdArrayToComps(obj.outputs);
-    delete obj.inputs; // don't let Component.import copy back in
-    delete obj.outputs; // don't let Component.import copy back in
-    return this._super(obj);
   }
 });
 
@@ -2241,13 +2146,8 @@ var MuxGate = Gate.extend({
     cxt.restore(); // restore rotation
     cxt.restore();
     return this;
-  },
-  import: function (obj) {
-    this.selects = this.convertIdArrayToComps(obj.selects);
-    delete obj.selects; // don't let Component.import copy back in
-    return this._super(obj);
   }
-});
+}); // End MuxGate
 
 /***********************************************
  * Point function
