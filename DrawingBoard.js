@@ -93,6 +93,7 @@ function getMousePos(canvas, evt) {
 }
 /***********************************************
  * DrawingBoard - logic board function
+ * By Steve Partlow
  * TODO: Add adder box (maybe generic box gate?)
  * TODO: change import to add source/targets instead of replacing inputs/outputs
  * TODO: Add save/load
