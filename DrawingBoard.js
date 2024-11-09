@@ -1202,15 +1202,13 @@ var Connection = Component.extend({
       cxt.font = "10px Veranda";
       //cxt.lineWidth = .5;
       if (this.labelLeft) {
-        if (this.labelLeft === true) {
-          if (this.not) var textX = this.x - 10 - this.board.unit / 3;
-          else textX = this.x - 10;
-        } else textX = this.x - this.labelLeft;
-        var textY = this.y + 3;
+        cxt.textAlign = "right"
+        var textX = this.x - 3;
       } else {
+        cxt.textAlign = "left"
         var textX = this.x + 3;
-        var textY = this.y + 3;
       }
+      var textY = this.y + 3;
       cxt.fillText('' + this.name, textX, textY);
     }
     cxt.restore();
@@ -1965,13 +1963,17 @@ var FullAdder = Gate.extend({
   },
   setLocation: function (x, y, inPixels) {
     this._super(x, y, inPixels);
-    var c = this.offset(0, .9); this.inputs['C'].setLocation(c.x, c.y, true)
-    var c = this.offset(1, .2); this.outputs['C'].setLocation(c.x, c.y, true)
-    var space = 0.4 / (this.getDimInputs() + 1); // the space above, below, and between each dot in a set of inputs/outputs
-    for (var i = 0; i < this.getDimInputs(); i++) {
-      var c = this.offset(0, 0.4 - space * (i + 1)); this.inputs['A' + i].setLocation(c.x, c.y, true); // x=from .0 to .4
-      var c = this.offset(0, 0.8 - space * (i + 1)); this.inputs['B' + i].setLocation(c.x, c.y, true); // x=from .4 to .8
-      var c = this.offset(1, 0.7 - space * (i + 1)); this.outputs['S' + i].setLocation(c.x, c.y, true); // x=from .3 to .7
+    var height = this.getHeight()
+    var dimInputs = this.getDimInputs()
+    var topleft = this.offset(0,0)
+    var topright = this.offset(1,0)
+    var space = height / (2 + dimInputs * 2); // the space above, below, and between each dot in a set of inputs/outputs
+    this.inputs['C'].setLocation(topleft.x, topleft.y + space * (1 + dimInputs * 2), true)
+    this.outputs['C'].setLocation(topright.x, topright.y + space, true)
+    for (var i = 0; i < dimInputs; i++) {
+      this.inputs['A' + i].setLocation(topleft.x, topleft.y + space * (1 + i), true); // x=from .0 to .4
+      this.inputs['B' + i].setLocation(topleft.x, topleft.y + space * (1 + dimInputs + i), true); // x=from .4 to .8
+      this.outputs['S' + i].setLocation(topright.x, topright.y + space * (2 + i), true); // x=from .3 to .7
     }
     return this;
   },
