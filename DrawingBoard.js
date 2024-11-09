@@ -94,14 +94,13 @@ function getMousePos(canvas, evt) {
 /***********************************************
  * DrawingBoard - logic board function
  * By Steve Partlow
- * TODO: Add adder box (maybe generic box gate?)
  * TODO: change import to add source/targets instead of replacing inputs/outputs
  * TODO: Add save/load
  * TODO: Add multiple select (CNTL and select box)
  ***********************************************/
 function DrawingBoard(node) {
   var board = this; // needed for scoping
-  this.version = 0.2;
+  this.version = 0.3;
   this.unit = 10;
   this.delay = 100;
   this.node = node;
@@ -1502,11 +1501,13 @@ var Display = Component.extend({
   export: function() {
     var obj = this._super();
     obj.displayType = this.displayType;
+    obj.digits = this.digits
     return obj;
   },
   import: function (obj) {
     this._super(obj);
     this.displayType = obj.displayType;
+    this.setMaxDigits(obj.digits)
   }
 }); // End Display class
 /***********************************************
