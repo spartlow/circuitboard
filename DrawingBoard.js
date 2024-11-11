@@ -100,7 +100,7 @@ function getMousePos(canvas, evt) {
  ***********************************************/
 function DrawingBoard(node) {
   var board = this; // needed for scoping
-  this.version = 0.3.1;
+  this.version = 0.3;
   this.unit = 10;
   this.delay = 100;
   this.node = node;
