@@ -661,7 +661,7 @@ var ComponentMenu = function (board, parentNode) {
     this.node.appendChild(button.node);
   }
   this.node = document.createElement('div');
-  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 150px; right: 0; display: inline-block; width: 150px; height: 50px;');
+  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 200px; right: 0; display: inline-block; width: 150px; height: 50px;');
   this.node.setAttribute('class', 'component-menu');
   this.component = null;
   this.update = function () {
@@ -678,6 +678,11 @@ var ComponentMenu = function (board, parentNode) {
       if (comp.className == 'Source' || comp.className == 'Display') this.addButton('Change Display', function (e) {
         var types = ['Standard', 'Logic', 'Digital'];
         comp.set('displayType', types[(Math.max(0, types.indexOf(comp.get('displayType'))) + 1) % types.length]);
+        board.draw();
+      });
+      if (comp.className == 'FullAdder') this.addButton('More Inputs', function (e) {
+        var dimInputs = comp.getDimInputs();
+        comp.setDimInputs(dimInputs+1);
         board.draw();
       });
       if (!comp.isWire && !comp.isConnection && !comp.isSource && !comp.isDisplay) this.addButton('Rotate', function (e) {
@@ -1506,7 +1511,7 @@ var Display = Component.extend({
   },
   import: function (obj) {
     this._super(obj);
-    this.displayType = obj.displayType;
+    this.setDisplayType(obj.displayType);
     this.setMaxDigits(obj.digits)
   }
 }); // End Display class
@@ -1923,7 +1928,7 @@ var XorGate = Gate.extend({
   },
 });
 /***********************************************
- * FullAddr class
+ * FullAdder class
  * Full adder with three binary inputs and two outputs
  ***********************************************/
 var FullAdder = Gate.extend({
@@ -1952,6 +1957,7 @@ var FullAdder = Gate.extend({
     return (Object.keys(this.inputs).length - 1) / 2; // don't count Cout and count A+B as one
   },
   setDimInputs: function (n) {
+    if (n < this.getDimInputs()) throw "setDimInputs to lower value not supported"
     for (var i = 0; i < n; i++) {
       if (this.getDimInputs() <= i) {
         this.addInput('A' + i);
@@ -1969,12 +1975,12 @@ var FullAdder = Gate.extend({
     var topleft = this.offset(0,0)
     var topright = this.offset(1,0)
     var space = height / (2 + dimInputs * 2); // the space above, below, and between each dot in a set of inputs/outputs
-    this.inputs['C'].setLocation(topleft.x, topleft.y + space * (1 + dimInputs * 2), true)
-    this.outputs['C'].setLocation(topright.x, topright.y + space, true)
+    this.inputs['C'].setLocation(topleft.x, topleft.y + space, true)
+    this.outputs['C'].setLocation(topright.x, topright.y + space * (1 + dimInputs * 2), true)
     for (var i = 0; i < dimInputs; i++) {
-      this.inputs['A' + i].setLocation(topleft.x, topleft.y + space * (1 + i), true); // x=from .0 to .4
-      this.inputs['B' + i].setLocation(topleft.x, topleft.y + space * (1 + dimInputs + i), true); // x=from .4 to .8
-      this.outputs['S' + i].setLocation(topright.x, topright.y + space * (2 + i), true); // x=from .3 to .7
+      this.inputs['A' + i].setLocation(topleft.x, topleft.y + space * (2 + i), true); // Start just after Cin
+      this.inputs['B' + i].setLocation(topleft.x, topleft.y + space * (2 + dimInputs + i), true); // Start after A0-n
+      this.outputs['S' + i].setLocation(topright.x, topright.y + space * (1 + i), true); // Start at top right
     }
     return this;
   },
@@ -2007,6 +2013,16 @@ var FullAdder = Gate.extend({
     cxt.restore();
     return this;
   },
+  export: function() {
+    var obj = this._super();
+    obj.dimInputs = this.getDimInputs();
+    return obj;
+  },
+  import: function (obj) {
+    this._super(obj);
+    if (obj.dimInputs) this.setDimInputs(obj.dimInputs);
+  }
+
 });
 /***********************************************
  * MuxGate class
