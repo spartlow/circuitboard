@@ -941,7 +941,7 @@ var Component = Class.extend({
     return this;
   },
   delete: function () {
-    if (this.importedObj) throw "Does this happen?"
+    //if (this.importedObj) throw "Does this happen?"
     this.deleted = true; // indicate is ready to be removed
     this.deleteChildren();
     // disconnect sources and targets and delete wires
