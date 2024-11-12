@@ -3,6 +3,7 @@
  * MIT Licensed.
  */
 // Inspired by base2 and Prototype
+// TODO: Add bus type for wire. Perhaps need to change data to be integer versus boolean everywhere?
 (function () {
   var initializing = false, fnTest = /xyz/.test(function () { xyz; }) ? /\b_super\b/ : /.*/;
   // The base Class implementation (does nothing)
@@ -1014,9 +1015,9 @@ var Wire = Component.extend({
     this.className = 'Wire';
     this.isWire = true;
   },
-  setData: function (data, recursive) {
+  setData: function (data, setNow) {
     if (this.deleted) return this; // don't bother
-    if (recursive) {
+    if (setNow) {
       this._super(data);
       this.board.draw();
     } else {
