@@ -417,6 +417,7 @@ function DrawingBoard(node) {
   }
   this.import = function (json) { // import DrawingBoard
     var origUnit = board.unit; // save this
+    if (json.constructor.name === "Object") json = JSON.stringify(json); // serialize to get a copy
     var obj = JSON.parse(json);
     this.importedBoard = obj;
     this.unit = obj.unit;
