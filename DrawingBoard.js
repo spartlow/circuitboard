@@ -414,7 +414,7 @@ function DrawingBoard(node) {
       var compObj = this.components[i].export();
       if (compObj) obj.components.push(compObj);
     }
-    return JSON.stringify(obj, null, " ");
+    return JSON.stringify(obj, null, null);
   }
   this.import = function (json) { // import DrawingBoard
     var origUnit = board.unit; // save this
@@ -889,11 +889,11 @@ var Component = Class.extend({
     obj = {};
     obj.className = this.className;
     obj.id = this.id;
-    if (this.data) obj.data = this.data;
-    if (this.x) obj.x = this.x / this.board.unit;
-    if (this.y) obj.y = this.y / this.board.unit;
-    if (this.rotation) obj.rotation = this.rotation;
-    if (this.height) obj.height = this.height / this.board.unit;
+    if ("data" in this && this.data !== null) obj.data = this.data;
+    if ("x" in this && this.x !== null) obj.x = this.x / this.board.unit;
+    if ("y" in this && this.y !== null) obj.y = this.y / this.board.unit;
+    if ("rotation" in this && this.rotation !== null) obj.rotation = this.rotation;
+    if ("height" in this && this.height !== null) obj.height = this.height / this.board.unit;
     return obj;
   },
   toJSON: function () {
@@ -1106,6 +1106,7 @@ var Wire = Component.extend({
     // Just export the location, will re-connect based on that when imported.
     obj.source = this.sources[0].getCoords();
     obj.target = this.targets[0].getCoords();
+    delete obj.data; // Let the wire get computed value once it's reconnected
     return obj;
   },
   import: function (obj) { // import Wire
