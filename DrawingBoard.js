@@ -1112,9 +1112,17 @@ var Wire = Component.extend({
     this._super(obj);
     var srcCoords = this.board.boardUnitCoordsToPixels(obj.source);
     var src = this.board.findClosestConnection(srcCoords, this.board.unit / 2, function (c) {return true});
+    if (!src) {
+      console.log(obj);
+      throw "Can't find source for wire!";
+    }
     this.addSource(src);
     var tgtCoords = this.board.boardUnitCoordsToPixels(obj.target);
     var tgt = this.board.findClosestConnection(tgtCoords, this.board.unit / 2, function (c) {return true});
+    if (!tgt) {
+      console.log(obj);
+      throw "Can't find target for wire!";
+    }
     this.addTarget(tgt);
     return obj;
   }
