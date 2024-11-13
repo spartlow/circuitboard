@@ -2032,7 +2032,6 @@ var FullAdder = Gate.extend({
     this._super(obj);
     if (obj.dimInputs) this.setDimInputs(obj.dimInputs);
   }
-
 });
 /***********************************************
  * MuxGate class
@@ -2176,6 +2175,15 @@ var MuxGate = Gate.extend({
     cxt.restore(); // restore rotation
     cxt.restore();
     return this;
+  },
+  export: function() {
+    var obj = this._super();
+    obj.numInputs = this.getNumInputs();
+    return obj;
+  },
+  import: function (obj) {
+    this._super(obj);
+    if (obj.numInputs) this.setNumInputs(obj.numInputs);
   }
 }); // End MuxGate
 
