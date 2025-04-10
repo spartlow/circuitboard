@@ -520,7 +520,7 @@ function drawingBoardMenu(board) {
   this.addButton('Copy', function (e) { copiedData = JSON.stringify(board); });
   this.addButton('Paste', function (e) { board.import(copiedData); });
   this.addButton('Print', function (e) { var node = document.getElementById('jsonArea').innerHTML = copiedData; });
-  this.addButton('-', function (e) { board.setUnit(Math.max(5, Math.round(board.unit * 0.75))); });
+  this.addButton('-', function (e) { board.setUnit(Math.max(5, Math.round(board.unit * 1/1.5))); });
   this.addButton('+', function (e) { board.setUnit(Math.round(board.unit * 1.5)); });
   board.node.appendChild(this.node);
 
