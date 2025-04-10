@@ -1,0 +1,14 @@
+.board-button {
+    display: inline-block;
+    height: 20px;
+    border: solid 1px;
+    border-radius: 3px;
+    margin: 1px;
+}
+.board-button:hover {
+    cursor: pointer;
+    box-shadow: 0 0 3px #000;
+}
+.board-button-active {
+    background-color: yellow;
+}

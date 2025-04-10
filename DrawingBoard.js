@@ -498,13 +498,16 @@ function DrawingBoard(node) {
 function drawingBoardMenu(board) {
   this.addButton = function (content, action) {
     var button = document.createElement('div');
-    button.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
+    //button.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
+    button.classList.add('board-button');
     button.innerHTML = content;
     button.onclick = action;
     this.node.appendChild(button);
   }
   this.node = document.createElement('div');
   this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 0; left: 0; display: inline-block; width: ' + board.node.clientWidth + 'px; height: 50px;');
+  this.node.classList.add('board-menu');
+  this.node.classList.add('board-main-menu');
   this.node.innerHTML = 'Menu:';
   this.addButton('Export', function (e) {
     //var json = JSON.stringify(board);
@@ -532,19 +535,22 @@ function partsMenu(board) {
     var button = {};
     button.node = document.createElement('div');
     button.active = false;
-    button.node.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
-    button.node.innerHTML = content;
+    //button.node.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
+    button.node.classList.add('board-button');
+      button.node.innerHTML = content;
     button.activate = function () {
       if (menu.activeButton != null && menu.activeButton != this) {
         menu.activeButton.deactivate(); // deactivate other button
       }
       menu.activeButton = this;
       this.active = true;
-      this.node.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px; background-color: yellow;');
+      //this.node.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px; background-color: yellow;');
+      button.node.classList.add('board-button-active');
     }
     button.deactivate = function () {
       this.active = false;
-      this.node.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
+      //this.node.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
+      button.node.classList.remove('board-button-active');
     }
     button.toggleActive = function () {
       if (this.active) this.deactivate();
@@ -561,6 +567,8 @@ function partsMenu(board) {
   }
   this.node = document.createElement('div');
   this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 0; right: 0; display: inline-block; width: 150px; height: 50px;');
+  this.node.classList.add('board-menu');
+  this.node.classList.add('board-part-menu');
   this.node.innerHTML = 'Parts:';
   this.addButton('Wire', function (e, origBuildingWire) {
     this.toggleActive();
@@ -655,7 +663,8 @@ var ComponentMenu = function (board, parentNode) {
     var button = {};
     button.node = document.createElement('div');
     button.menu = this;
-    button.node.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
+    //button.node.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
+    button.node.classList.add('board-button');
     button.node.innerHTML = content;
     button.node.onclick = function (e) {
       action.call(button, e);
@@ -664,7 +673,8 @@ var ComponentMenu = function (board, parentNode) {
   }
   this.node = document.createElement('div');
   this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 200px; right: 0; display: inline-block; width: 150px; height: 50px;');
-  this.node.setAttribute('class', 'component-menu');
+  this.node.classList.add('board-menu');
+  this.node.classList.add('board-component-menu');
   this.component = null;
   this.update = function () {
     if (!board.selected) {
