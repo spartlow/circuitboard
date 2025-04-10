@@ -505,26 +505,72 @@ function drawingBoardMenu(board) {
     this.node.appendChild(button);
   }
   this.node = document.createElement('div');
-  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 0; left: 0; display: inline-block; width: ' + board.node.clientWidth + 'px; height: 50px;');
-  this.node.classList.add('board-menu');
-  this.node.classList.add('board-main-menu');
+  this.node.setAttribute('style', `z-index: 100; position: absolute; top: 0; left: 0; display: inline-block; width: ${board.node.clientWidth}px; height: 50px;`);
+  this.node.classList.add('board-menu', 'board-main-menu');
   this.node.innerHTML = 'Menu:';
-  this.addButton('Export', function (e) {
-    //var json = JSON.stringify(board);
-    json = board.export();
-    //var txt = window.prompt ("Copy to clipboard: Ctrl+C, Enter", json);
-    //if (txt!=json) alert(''+json.length+' -> '+txt.length);
-    document.getElementById('jsonArea').innerHTML = json;
+
+  // Add buttons to the menu
+  this.addButton('Export', function () {
+      try {
+          const json = board.export();
+          const jsonArea = document.getElementById('jsonArea');
+          jsonArea.innerHTML = json;
+      } catch (error) {
+          console.error("Error exporting board:", error);
+      }
   });
-  this.addButton('Import', function (e) { board.import(window.prompt("Paste import data", '{}')); });
-  this.addButton('Copy', function (e) { copiedData = JSON.stringify(board); });
-  this.addButton('Paste', function (e) { board.import(copiedData); });
-  this.addButton('Print', function (e) { var node = document.getElementById('jsonArea').innerHTML = copiedData; });
-  this.addButton('-', function (e) { board.setUnit(Math.max(5, Math.round(board.unit * 1/1.5))); });
-  this.addButton('+', function (e) { board.setUnit(Math.round(board.unit * 1.5)); });
+
+  this.addButton('Import', function () {
+      const inputData = window.prompt("Paste import data", '{}');
+      if (inputData) {
+          try {
+              board.import(inputData);
+          } catch (error) {
+              console.error("Error importing data:", error);
+          }
+      }
+  });
+
+  this.addButton('Copy', function () {
+      try {
+          copiedData = JSON.stringify(board);
+      } catch (error) {
+          console.error("Error copying board data:", error);
+      }
+  });
+
+  this.addButton('Paste', function () {
+      if (copiedData) {
+          try {
+              board.import(copiedData);
+          } catch (error) {
+              console.error("Error pasting board data:", error);
+          }
+      } else {
+          console.warn("No data to paste.");
+      }
+  });
+
+  this.addButton('Print', function () {
+      const jsonArea = document.getElementById('jsonArea');
+      if (jsonArea) {
+          jsonArea.innerHTML = copiedData || "No data to print.";
+      } else {
+          console.error("Element with ID 'jsonArea' not found.");
+      }
+  });
+
+  this.addButton('-', function () {
+      const newUnit = Math.max(5, Math.round(board.unit / 1.5));
+      board.setUnit(newUnit);
+  });
+
+  this.addButton('+', function () {
+      const newUnit = Math.round(board.unit * 1.5);
+      board.setUnit(newUnit);
+  });
+
   board.node.appendChild(this.node);
-
-
 }
 /***********************************************
  * partsMenu
