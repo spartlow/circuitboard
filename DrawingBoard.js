@@ -299,6 +299,7 @@ function DrawingBoard(node) {
         comp = this.components[i];
         if (comp.parent == null) { // child components will be updated by their parents
           if (comp.height) comp.setHeight(comp.height / oldUnit);
+          if (comp.width) comp.setWidth(comp.width / oldUnit);
           comp.setLocation(comp.x / oldUnit, comp.y / oldUnit);
         }
       }
@@ -897,6 +898,10 @@ var Component = Class.extend({
     if (this.height) return length * this.height;
     else return length * this.board.unit;
   },
+  setWidth: function (w) {
+    this.width = this.board.unit * w;
+    return this;
+  },
   getWidth: function () {
     if (this.width) return this.width;
     else if (this.height) return this.height;
@@ -1293,7 +1298,7 @@ var Connection = Component.extend({
     cxt.closePath();
     if (this.name && (this.yesLabel || (!this.board.noLabels && !this.noLabel))) {
       cxt.fillStyle = '#000';
-      cxt.font = "10px Veranda";
+      cxt.font = this.scaleY(1.2) + "px Veranda";
       //cxt.lineWidth = .5;
       if (this.labelLeft) {
         cxt.textAlign = "right"
@@ -2163,7 +2168,7 @@ var MuxGate = Gate.extend({
         this.addSelect(i.toString());
       }
     }
-    this.width = (4 + 2 * (n - 1)) * this.board.unit;
+    this.setWidth(4 + 2 * (n - 1));
     this.renameInputs();
     return this;
   },
