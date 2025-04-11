@@ -108,18 +108,39 @@ function DrawingBoard(node) {
   this.idPrefix = 'id';
   node.innerHTML = ''; // we don't allow anything in there.
   node.style.position = 'relative';
+  node.classList.add('board-container');
+
+  // Set initial size if not already defined
   if (node.clientWidth == 0) node.style.width = '200px';
   if (node.clientHeight == 0) node.style.height = '100px';
+
   this.canvases = [];
   for (var i = 0; i < 4; i++) {
     var newCanvas = document.createElement('canvas');
-    newCanvas.setAttribute('width', node.clientWidth);
-    newCanvas.setAttribute('height', node.clientHeight);
     newCanvas.setAttribute('style', 'z-index: ' + (i + 1) + '; position: absolute; top: 0; left: 0;');
+    newCanvas.classList.add('board-canvas','board-canvas-' + i);
     node.appendChild(newCanvas);
     this.canvases.push(newCanvas);
-    //node.innerHTML += '<canvas id="test1" width="400" height="400" style="z-index: 1;  position: absolute; top: 0; left: 0;"></canvas>';
   }
+
+  // Resize canvases to fit the parent node
+  this.resizeCanvases = function () {
+    const width = node.clientWidth;
+    const height = node.clientHeight;
+
+    for (var i = 0; i < this.canvases.length; i++) {
+      this.canvases[i].width = width;
+      this.canvases[i].height = height;
+    }
+
+    // Redraw the board after resizing
+    this.drewGrid = false; // need to draw the grid again
+    this.draw();
+  };
+
+  // Attach resize event listener
+  window.addEventListener('resize', this.resizeCanvases.bind(this));
+
   this.selected = null;
   this.dragging = null;
   this.components = [];
@@ -257,8 +278,8 @@ function DrawingBoard(node) {
     this.menu = new drawingBoardMenu(this);
     /* Next shrink the canvases to make room */
     for (var i = 0; i < this.canvases.length; i++) {
-      this.canvases[i].setAttribute('height', this.node.clientHeight - this.menu.node.clientHeight);
-      this.canvases[i].style.top = '' + this.menu.node.clientHeight + 'px';
+      //this.canvases[i].setAttribute('height', this.node.clientHeight - this.menu.node.clientHeight);
+      //this.canvases[i].style.top = '' + this.menu.node.clientHeight + 'px';
     }
   };
   this.createPartsMenu = function () {
@@ -266,7 +287,7 @@ function DrawingBoard(node) {
     this.componentMenu = new ComponentMenu(this, this.node);
     /* Next shrink the canvases to make room */
     for (var i = 0; i < this.canvases.length; i++) {
-      this.canvases[i].setAttribute('width', this.node.clientWidth - this.partsMenu.node.clientWidth);
+      //this.canvases[i].setAttribute('width', this.node.clientWidth - this.partsMenu.node.clientWidth);
       //this.canvases[i].style.top = ''+this.partsMenu.node.clientHeight+'px';
     }
   };
@@ -290,6 +311,7 @@ function DrawingBoard(node) {
         comp = this.components[i];
         if (comp.parent == null) { // child components will be updated by their parents
           if (comp.height) comp.setHeight(comp.height / oldUnit);
+          if (comp.width) comp.setWidth(comp.width / oldUnit);
           comp.setLocation(comp.x / oldUnit, comp.y / oldUnit);
         }
       }
@@ -501,6 +523,8 @@ function DrawingBoard(node) {
       setup(this);
     }
   }
+  // Initial resize to fit the current viewport
+  this.resizeCanvases();
 }
 
 /***********************************************
@@ -517,28 +541,84 @@ function drawingBoardMenu(board) {
     this.node.appendChild(button);
   }
   this.node = document.createElement('div');
-  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 0; left: 0; display: inline-block; width: ' + board.node.clientWidth + 'px; height: 50px;');
-  this.node.classList.add('board-menu');
-  this.node.classList.add('board-main-menu');
+  this.node.setAttribute('style', `z-index: 100; position: absolute; top: 0; left: 0; display: inline-block; width: ${board.node.clientWidth}px; height: 50px;`);
+  this.node.classList.add('board-menu', 'board-main-menu');
   this.node.innerHTML = 'Menu:';
-  this.addButton('Export', function (e) {
-    //var json = JSON.stringify(board);
-    json = board.export();
-    //var txt = window.prompt ("Copy to clipboard: Ctrl+C, Enter", json);
-    //if (txt!=json) alert(''+json.length+' -> '+txt.length);
-    document.getElementById('jsonArea').innerHTML = json;
+
+  // Add buttons to the menu
+  this.addButton('Export', function () {
+      try {
+          const json = board.export();
+          const jsonArea = document.getElementById('jsonArea');
+          jsonArea.innerHTML = json;
+      } catch (error) {
+          console.error("Error exporting board:", error);
+      }
   });
-  this.addButton('Import', function (e) { board.import(window.prompt("Paste import data", '{}')); });
-  this.addButton('Copy', function (e) { copiedData = JSON.stringify(board); });
-  this.addButton('Paste', function (e) { board.import(copiedData); });
-  this.addButton('Print', function (e) { var node = document.getElementById('jsonArea').innerHTML = copiedData; });
-  //this.addButton('-', function (e) { board.setUnit(Math.max(5, Math.round(board.unit * 0.75))); });
-  //this.addButton('+', function (e) { board.setUnit(Math.round(board.unit * 1.5)); });
-  this.addButton('-', function (e) { board.setScale(Math.max(5, Math.round(board.scale * 0.75))); });
-  this.addButton('+', function (e) { board.setScale(Math.round(board.scale * 1.5)); });
+
+  this.addButton('Import', function () {
+      const inputData = window.prompt("Paste import data", '{}');
+      if (inputData) {
+          try {
+              board.import(inputData);
+          } catch (error) {
+              console.error("Error importing data:", error);
+          }
+      }
+  });
+
+  this.addButton('Copy', function () {
+      try {
+          copiedData = JSON.stringify(board);
+      } catch (error) {
+          console.error("Error copying board data:", error);
+      }
+  });
+
+  this.addButton('Paste', function () {
+      if (copiedData) {
+          try {
+              board.import(copiedData);
+          } catch (error) {
+              console.error("Error pasting board data:", error);
+          }
+      } else {
+          console.warn("No data to paste.");
+      }
+  });
+
+  this.addButton('Print', function () {
+      const jsonArea = document.getElementById('jsonArea');
+      if (jsonArea) {
+          jsonArea.innerHTML = copiedData || "No data to print.";
+      } else {
+          console.error("Element with ID 'jsonArea' not found.");
+      }
+  });
+
+  /*
+  this.addButton('-', function () {
+      const newUnit = Math.max(5, Math.round(board.unit / 1.5));
+      board.setUnit(newUnit);
+  });
+
+  this.addButton('+', function () {
+      const newUnit = Math.round(board.unit * 1.5);
+      board.setUnit(newUnit);
+  });
+*/
+this.addButton('-', function () {
+    const newScale = Math.max(5, Math.round(board.scale / 1.5));
+    board.setScale(newScale);
+});
+
+this.addButton('+', function () {
+    const newScale = Math.round(board.scale * 1.5);
+    board.setScale(newScale);
+});
+
+
   board.node.appendChild(this.node);
-
-
 }
 /***********************************************
  * partsMenu
@@ -841,6 +921,10 @@ var Component = Class.extend({
   scaleY: function (length) {
     if (this.height) return length * this.height;
     else return length * this.board.unit;
+  },
+  setWidth: function (w) {
+    this.width = this.board.unit * w;
+    return this;
   },
   getWidth: function () {
     if (this.width) return this.width;
@@ -1238,7 +1322,7 @@ var Connection = Component.extend({
     cxt.closePath();
     if (this.name && (this.yesLabel || (!this.board.noLabels && !this.noLabel))) {
       cxt.fillStyle = '#000';
-      cxt.font = "10px Veranda";
+      cxt.font = this.scaleY(1.2) + "px Veranda";
       //cxt.lineWidth = .5;
       if (this.labelLeft) {
         cxt.textAlign = "right"
@@ -2108,7 +2192,7 @@ var MuxGate = Gate.extend({
         this.addSelect(i.toString());
       }
     }
-    this.width = (4 + 2 * (n - 1)) * this.board.unit;
+    this.setWidth(4 + 2 * (n - 1));
     this.renameInputs();
     return this;
   },
