@@ -67,6 +67,12 @@ var ON_COLOR = '#51C2C6';
 //var ON_COLOR = '#F00';
 var ON_BACKGROUND = ON_COLOR;
 //var ON_BACKGROUND = '#F66';
+//var SELECT_COLOR = '#337777';
+//var SELECT_COLOR = '#DDDD55';
+var SELECT_COLOR = '#000000';
+//var SELECT_BACKGROUND = '#DDDD22';
+var SELECT_BACKGROUND = '#0009';
+// See https://www.canva.com/colors/color-wheel/
 var drawingBoardManager;
 function buildDrawingBoards() {
   if (!isCanvasSupported()) return; // do nothing if canvas isn't supported.
@@ -281,6 +287,7 @@ function DrawingBoard(node) {
         to.y = this.selected.y;
       }
       var cxt = this.contexts[1]; // use wire context
+      cxt.save();
       cxt.beginPath();
       cxt.lineWidth = 1;
       if (this.data == true) {
@@ -288,10 +295,15 @@ function DrawingBoard(node) {
       } else {
         cxt.strokeStyle = '#000';
       }
+      cxt.shadowBlur = 5;
+      cxt.shadowColor = SELECT_BACKGROUND;
+      cxt.shadowOffsetX = 5;
+      cxt.shadowOffsetY = 5;
       cxt.moveTo(from.x, from.y);
       cxt.lineTo(to.x, to.y);
       cxt.stroke();
       cxt.closePath();
+      cxt.restore();
     }
   }
   this.select = function (component) {
@@ -308,12 +320,18 @@ function DrawingBoard(node) {
     if (this.componentMenu) this.componentMenu.update();
   };
   this.startDragging = function (component, coords) {
-    board.dragging = component;
-    board.draggedFromXDelta = coords.x - component.x;
-    board.draggedFromYDelta = coords.y - component.y;
+    if (component.isDraggable !== false) {
+      board.dragging = component;
+      component.beingDragged = true;
+      board.draggedFromXDelta = coords.x - component.x;
+      board.draggedFromYDelta = coords.y - component.y;
+    }
   }
   this.stopDragging = function () {
-    board.dragging = null;
+    if (board.dragging !== null) {
+      board.dragging.beingDragged = false;
+      board.dragging = null;
+    }
   }
   this.getImportComponentById = function (id) {
     for (var i = 0; i < this.importedBoard.components.length; i++) {
@@ -399,7 +417,7 @@ function DrawingBoard(node) {
     }
     if (e.type == 'mousedown') board.unselect();
     if (e.type == 'mouseup') {
-      board.dragging = null;
+      board.stopDragging();
       if (board.buildingWire) {
         if (board.selected) {
           if (board.buildingWireConnection) {
@@ -1024,11 +1042,16 @@ var Component = Class.extend({
   draw: function (cxt) {
     cxt.lineCap = 'square';
     if (this.selected) {
-      cxt.strokeStyle = '#00F';
+      cxt.strokeStyle = SELECT_COLOR;
       cxt.shadowBlur = 5;
-      cxt.shadowColor = "#099";
-      cxt.shadowOffsetX = 0;
-      cxt.shadowOffsetY = 0;
+      cxt.shadowColor = SELECT_BACKGROUND;
+      if (this.beingDragged) { // further shadow
+        cxt.shadowOffsetX = 5;
+        cxt.shadowOffsetY = 5;
+      } else {
+        cxt.shadowOffsetX = 2;
+        cxt.shadowOffsetY = 2;
+      }
     } else {
       cxt.strokeStyle = '#000';
     }
@@ -1054,6 +1077,7 @@ var Component = Class.extend({
     }
     delete me.board;
     delete me.selected;
+    delete me.beingDragged;
     delete me.setters;
     delete me.imported;
     delete me.importedObj;
@@ -1164,6 +1188,7 @@ var Wire = Component.extend({
     this._super(board);
     this.className = 'Wire';
     this.isWire = true;
+    this.isDraggable = false;
   },
   setData: function (data, setNow) {
     if (this.deleted) return this; // don't bother
@@ -1184,6 +1209,7 @@ var Wire = Component.extend({
       x = Math.round((this.sources[0].x + this.targets[0].x) / 2 / this.board.unit); // pick midway point
       y = Math.round((this.sources[0].y + this.targets[0].y) / 2 / this.board.unit); // pick midway point
     }
+    // TBD make waypoint a component with a square or circle around the connection?
     var corner = new Connection(this.board).setLocation(x, y);
     var wire = new Wire(this.board).addSource(corner);
     if (this.targets[0]) {
@@ -2157,9 +2183,9 @@ var FullAdder = Gate.extend({
     c = this.offset(1, 1); cxt.lineTo(c.x, c.y);
     c = this.offset(0, 1); cxt.lineTo(c.x, c.y);
     c = this.offset(0, 0); cxt.lineTo(c.x, c.y);
+    cxt.stroke();
     cxt.fillStyle = '#EEE';
     cxt.fill();
-    cxt.stroke();
     cxt.closePath();
     cxt.save(); // save for rotation
     cxt.beginPath();
@@ -2167,9 +2193,10 @@ var FullAdder = Gate.extend({
     cxt.textAlign = "center";
     cxt.textBaseline = "middle";
     cxt.font = 'bold ' + (this.height / 2) + 'px Veranda';
+    cxt.shadowColor = "#0000"; // turn off shadow
     cxt.translate(this.x + this.getWidth() / 2, this.y + this.getHeight() / 2); // make center into 0,0
-    var degrees = this.getRotation();
-    cxt.rotate(this.rotation);
+    //var degrees = this.getRotation();
+    //cxt.rotate(this.rotation);
     cxt.fillText('+', 0, 0); // centered
     cxt.closePath();
     cxt.restore(); // restore rotation
@@ -2290,6 +2317,7 @@ var MuxGate = Gate.extend({
     cxt.textAlign = "center";
     cxt.textBaseline = "middle";
     cxt.font = '' + (this.height / 4) + 'px Veranda';
+    cxt.shadowColor = "#0000"; // turn off shadow
     cxt.translate(this.x + this.getWidth() / 2, this.y + this.getHeight() / 2);
     var degrees = this.getRotation();
     if (degrees <= 45 - 4 || degrees > 315 + 4) {
