@@ -101,8 +101,9 @@ function getMousePos(canvas, evt) {
  ***********************************************/
 function DrawingBoard(node) {
   var board = this; // needed for scoping
-  this.version = 0.3;
-  this.unit = 10;
+  this.version = 0.4;
+  this.unit = 10; // TODO remove board.unit. Or make it just mean where points can snap?
+  this.scale = 1;
   this.delay = 100;
   this.node = node;
   this.idPrefix = 'id';
@@ -155,39 +156,72 @@ function DrawingBoard(node) {
   this.get = function (att) {
     return this[att];
   };
+  /* Translate canvas coordinate to pixels, taking into account the scaling */
+  this.canvasUnitToPixel = function(cu) {
+    return cu * this.scale;
+  };
+  /* Translate pixels to canvas coordinate unit, taking into account the scaling */
+  this.pixelToCanvasUnit = function(px) {
+    return px / this.scale;
+  };
+  /* Translate x/y coordinate from pixels to canvas coordinate unit, taking into account the scaling */
+  this.pixelCoordToCanvasCoord = function(c) {
+    newCoord = {x: this.pixelToCanvasUnit(c.x), y: this.pixelToCanvasUnit(c.y)};
+    return newCoord;
+  };
   this.drawGrid = function () {
     this.drewGrid = true;
-    this.contexts[0].clearRect(0, 0, this.canvases[0].width, this.canvases[0].height);
+    this.contexts[0].clearRect(0, 0, this.canvases[0].width / this.scale, this.canvases[0].height / this.scale);
     if (this.noGrid) return;
-    this.contexts[0].lineWidth = 1;
+    this.contexts[0].lineWidth = .5;
     this.contexts[0].beginPath();
     this.contexts[0].strokeStyle = '#EEE';
-    for (var x = this.unit; x < this.canvases[0].width; x += this.unit) {
+    for (var x = 0; x < this.canvases[0].width / this.scale; x += this.unit) {
       this.contexts[0].moveTo(x, 0);
-      this.contexts[0].lineTo(x, this.canvases[0].height);
+      this.contexts[0].lineTo(x, this.canvases[0].height / this.scale);
     }
-    for (var y = this.unit; y < this.canvases[0].height; y += this.unit) {
+    for (var y = 0; y < this.canvases[0].height / this.scale; y += this.unit) {
       this.contexts[0].moveTo(0, y);
-      this.contexts[0].lineTo(this.canvases[0].width, y);
+      this.contexts[0].lineTo(this.canvases[0].width / this.scale, y);
     }
     this.contexts[0].stroke();
     this.contexts[0].closePath();
 
     /* Now draw major lines */
+    this.contexts[0].lineWidth = 1;
     this.contexts[0].beginPath();
     this.contexts[0].strokeStyle = '#CCC';
     this.contexts[0].stroke();
     this.contexts[0].closePath();
-    for (var x = this.unit * 10; x < this.canvases[0].width; x += this.unit * 10) {
+    for (var x = 0; x < this.canvases[0].width / this.scale; x += this.unit * 10) {
       this.contexts[0].moveTo(x, 0);
-      this.contexts[0].lineTo(x, this.canvases[0].height);
+      this.contexts[0].lineTo(x, this.canvases[0].height / this.scale);
     }
-    for (var y = this.unit * 10; y < this.canvases[0].height; y += this.unit * 10) {
+    for (var y = this.unit * 10; y < this.canvases[0].height / this.scale; y += this.unit * 10) {
       this.contexts[0].moveTo(0, y);
-      this.contexts[0].lineTo(this.canvases[0].width, y);
+      this.contexts[0].lineTo(this.canvases[0].width / this.scale, y);
     }
     this.contexts[0].stroke();
     this.contexts[0].closePath();
+
+    /* Now draw major major lines */
+    this.contexts[0].lineWidth = 2;
+    this.contexts[0].beginPath();
+    this.contexts[0].strokeStyle = '#AAA';
+    this.contexts[0].stroke();
+    this.contexts[0].closePath();
+    for (var x = 0; x < this.canvases[0].width / this.scale; x += this.unit * 100) {
+      this.contexts[0].moveTo(x, 0);
+      this.contexts[0].lineTo(x, this.canvases[0].height / this.scale);
+    }
+    for (var y = 0; y < this.canvases[0].height / this.scale; y += this.unit * 100) {
+      this.contexts[0].moveTo(0, y);
+      this.contexts[0].lineTo(this.canvases[0].width / this.scale, y);
+    }
+    this.contexts[0].stroke();
+    this.contexts[0].closePath();
+
+
   };
   this.addComponent = function (component) {
     this.components.push(component);
@@ -203,7 +237,7 @@ function DrawingBoard(node) {
   this.draw = function () {
     if (!this.drewGrid) this.drawGrid();
     for (i in this.contexts) {
-      if (i != 0) this.contexts[i].clearRect(0, 0, this.canvases[i].width, this.canvases[i].height);
+      if (i != 0) this.contexts[i].clearRect(0, 0, this.canvases[i].width / this.scale, this.canvases[i].height / this.scale);
     }
     for (i in this.components) {
       if (this.components[i].isWire) {
@@ -218,7 +252,7 @@ function DrawingBoard(node) {
       var from = {};
       var to = {};
       if (this.buildingWireConnection == null) {
-        from.x = this.pointerCoords.x + 30; //this.canvases[0].width;
+        from.x = this.pointerCoords.x + 30; //this.canvases[0].width / this.scale;
         from.y = this.pointerCoords.y - 10; //0;
       } else {
         from.x = this.buildingWireConnection.x;
@@ -292,11 +326,11 @@ function DrawingBoard(node) {
     }
   };
   this.setScale = function (s) {
-    var oldUnit = this.scale;
+    var oldScale = this.scale;
     this.scale = s;
-    if (oldUnit != this.unit) {
+    if (oldScale != this.unit) {
       for (i in this.contexts) {
-        this.contexts[i].scale = this.scale
+        this.contexts[i].scale(this.scale / oldScale, this.scale / oldScale)
       }
     }
     this.drewGrid = false; // need to draw the grid again
@@ -322,7 +356,7 @@ function DrawingBoard(node) {
   };
   this.listener = function (e) {
     e.stopPropagation();
-    var coords = getMousePos(board.canvases[board.canvases.length - 1], e);
+    var coords = board.pixelCoordToCanvasCoord(getMousePos(board.canvases[board.canvases.length - 1], e));
     board.pointerCoords = coords;
     var toolTip = document.getElementById("drawingBoardHoverText");
     if (toolTip == null) toolTip = {};
@@ -441,7 +475,7 @@ function DrawingBoard(node) {
     var obj = {};
     obj.type = "DrawingBoard";
     obj.version = this.version;
-    obj.unit = this.unit;
+    obj.scale = this.scale;
     obj.delay = this.delay;
     obj.components = [];
     for (var i = 0; i < this.components.length; i++) {
@@ -451,11 +485,11 @@ function DrawingBoard(node) {
     return JSON.stringify(obj, null, null);
   }
   this.import = function (json) { // import DrawingBoard
-    var origUnit = board.unit; // save this
     if (json.constructor.name === "Object") json = JSON.stringify(json); // serialize to get a copy
     var obj = JSON.parse(json);
     this.importedBoard = obj;
-    this.unit = obj.unit;
+    if (obj.scale) this.scale = obj.scale;
+    else this.scale = 1;
     this.delay = obj.delay;
     this.components = []; // TBD do we really want to erase what's already here???
     for (var i = 0; i < obj.components.length; i++) {
@@ -493,6 +527,7 @@ function DrawingBoard(node) {
         throw "non-imported component found";
       }
     }
+    this.drewGrid = false; // Redraw the grid
     this.draw();
   }
   this.findClosestConnection = function (coord, maxDistance, isMatch) {
@@ -608,13 +643,17 @@ function drawingBoardMenu(board) {
   });
 */
 this.addButton('-', function () {
-    const newScale = Math.max(5, Math.round(board.scale / 1.5));
-    board.setScale(newScale);
+    const newScale = board.scale / 1.5;
+    if (newScale >= 0.1) {
+      board.setScale(newScale);
+    }
 });
 
 this.addButton('+', function () {
-    const newScale = Math.round(board.scale * 1.5);
-    board.setScale(newScale);
+    const newScale = board.scale * 1.5;
+    if (newScale <= 10) {
+      board.setScale(newScale);
+    }
 });
 
 

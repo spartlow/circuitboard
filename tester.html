@@ -34,13 +34,12 @@ function setupBoard1(board) {
 function setupBoard2(board) {
   // start with an empty board
   targetBoard = board;
-  board.unit = 15;
   board.createMenu();
 }
 //]]>
 </script>
 </head>
-<body onload="buildDrawingBoards(); document.getElementById('jsonArea').innerHTML = sourceBoard.export(); targetBoard.import(document.getElementById('jsonArea').innerHTML);">
+<body onload="buildDrawingBoards(); document.getElementById('jsonArea').innerHTML = sourceBoard.export(); targetBoard.import(document.getElementById('jsonArea').innerHTML); targetBoard.setScale(1.5)">
 <h1>Tester</h2>
 <div class="drawingBoard" data-board-setup="setupBoard1" style="border: solid 1px; height: 400px; width: 400px; display: inline-block;">
 </div>

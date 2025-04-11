@@ -1,7 +1,7 @@
 {
     "type": "DrawingBoard",
     "version": 0.3,
-    "unit": 10,
+    "scale": 1,
     "delay": 100,
     "components": [
         {
