@@ -422,10 +422,9 @@ function DrawingBoard(node) {
     }
     if (e.type == 'mousemove') {
       if (board.dragging) {
-        board.dragging.setLocation(
-          Math.floor((coords.x - board.draggedFromXDelta))
-          , Math.floor((coords.y - board.draggedFromYDelta))
-          , true
+        board.dragging.setLocation( // Snap to board units
+          Math.floor((coords.x - board.draggedFromXDelta) / board.unit)
+          , Math.floor((coords.y - board.draggedFromYDelta) / board.unit)
         );
       }
     }
@@ -1367,7 +1366,7 @@ var Connection = Component.extend({
     cxt.closePath();
     if (this.name && (this.yesLabel || (!this.board.noLabels && !this.noLabel))) {
       cxt.fillStyle = '#000';
-      cxt.font = this.scaleY(1.2) + "px Veranda";
+      cxt.font = this.scaleY(1) + "px Veranda";
       //cxt.lineWidth = .5;
       if (this.labelLeft) {
         cxt.textAlign = "right"
@@ -1377,6 +1376,8 @@ var Connection = Component.extend({
         var textX = this.x + 3;
       }
       var textY = this.y + 3;
+      cxt.strokeStyle = '#EEE';
+      cxt.strokeText('' + this.name, textX, textY);
       cxt.fillText('' + this.name, textX, textY);
     }
     cxt.restore();
