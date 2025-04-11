@@ -113,9 +113,10 @@ function DrawingBoard(node) {
   this.canvases = [];
   for (var i = 0; i < 4; i++) {
     var newCanvas = document.createElement('canvas');
-    newCanvas.setAttribute('width', node.clientWidth);
-    newCanvas.setAttribute('height', node.clientHeight);
+    newCanvas.setAttribute('width', '100px');
+    newCanvas.setAttribute('height', '100px');
     newCanvas.setAttribute('style', 'z-index: ' + (i + 1) + '; position: absolute; top: 0; left: 0;');
+    newCanvas.classList.add('board-canvas','board-canvas-' + i);
     node.appendChild(newCanvas);
     this.canvases.push(newCanvas);
     //node.innerHTML += '<canvas id="test1" width="400" height="400" style="z-index: 1;  position: absolute; top: 0; left: 0;"></canvas>';
@@ -257,8 +258,8 @@ function DrawingBoard(node) {
     this.menu = new drawingBoardMenu(this);
     /* Next shrink the canvases to make room */
     for (var i = 0; i < this.canvases.length; i++) {
-      this.canvases[i].setAttribute('height', this.node.clientHeight - this.menu.node.clientHeight);
-      this.canvases[i].style.top = '' + this.menu.node.clientHeight + 'px';
+      //this.canvases[i].setAttribute('height', this.node.clientHeight - this.menu.node.clientHeight);
+      //this.canvases[i].style.top = '' + this.menu.node.clientHeight + 'px';
     }
   };
   this.createPartsMenu = function () {
@@ -266,7 +267,7 @@ function DrawingBoard(node) {
     this.componentMenu = new ComponentMenu(this, this.node);
     /* Next shrink the canvases to make room */
     for (var i = 0; i < this.canvases.length; i++) {
-      this.canvases[i].setAttribute('width', this.node.clientWidth - this.partsMenu.node.clientWidth);
+      //this.canvases[i].setAttribute('width', this.node.clientWidth - this.partsMenu.node.clientWidth);
       //this.canvases[i].style.top = ''+this.partsMenu.node.clientHeight+'px';
     }
   };
