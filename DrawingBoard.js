@@ -290,7 +290,7 @@ function DrawingBoard(node) {
       cxt.save();
       cxt.beginPath();
       cxt.lineWidth = 1;
-      if (this.data == true) {
+      if (this.data > 0) {
         cxt.strokeStyle = ON_COLOR;
       } else {
         cxt.strokeStyle = '#000';
@@ -880,7 +880,7 @@ var Component = Class.extend({
   init: function (board) {
     this.board = board;
     this.className = 'Component';
-    this.data = false;
+    this.data = 0;
     this.targets = [];
     this.sources = [];
     this.setters = {};
@@ -1265,7 +1265,7 @@ var Wire = Component.extend({
     this._super(cxt);
     cxt.beginPath();
     cxt.lineWidth = 1;
-    if (this.data == true) {
+    if (this.data > 0) {
       cxt.strokeStyle = ON_COLOR;
     } else {
       cxt.strokeStyle = '#000';
@@ -1416,7 +1416,7 @@ var Connection = Component.extend({
  * Source class
  * A source of data to the board.
  ***********************************************/
-var Source = Component.extend({ // $$$ make this a Gate child
+var Source = Component.extend({ // TODO make this a Gate child
   init: function (board) {
     this._super(board);
     this.className = 'Source';
@@ -1462,10 +1462,10 @@ var Source = Component.extend({ // $$$ make this a Gate child
       && coords.x <= this.x + this.height * 0.9
       && coords.y >= this.y + this.height * 0.1
       && coords.y <= this.y + this.height * 0.9) {
-      if (this.data === true) {
-        this.setData(false);
-      } else if (this.data === false) {
-        this.setData(true);
+      if (this.data > 0) {
+        this.setData(0);
+      } else {
+        this.setData(1);
       }
     }
   },
@@ -1477,7 +1477,7 @@ var Source = Component.extend({ // $$$ make this a Gate child
       cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
       cxt.stroke();
       cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      if (this.data == true) {
+      if (this.data > 0) {
         cxt.fillStyle = ON_BACKGROUND;
         var displayText = 'T';
       } else {
@@ -1501,8 +1501,8 @@ var Source = Component.extend({ // $$$ make this a Gate child
       cxt.fillStyle = '#000';
       cxt.textAlign = "center";
       cxt.textBaseline = "middle";
-      if (this.data == true) {
-        var displayText = '1';
+      if (this.data > 0) {
+        var displayText = 0 + this.data;
       } else {
         displayText = '0';
       }
@@ -1519,7 +1519,7 @@ var Source = Component.extend({ // $$$ make this a Gate child
       cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.3, 0, 2 * Math.PI);
       cxt.stroke();
       cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      if (this.data == true) {
+      if (this.data > 0) {
         cxt.fillStyle = ON_COLOR;
       } else {
         cxt.fillStyle = '#333';
@@ -1632,7 +1632,7 @@ var Display = Component.extend({
       cxt.lineTo(this.x + this.height * 0.2, this.y + this.height * 0.2);
       cxt.stroke();
       cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      if (this.data == true) {
+      if (this.data > 0) {
         cxt.fillStyle = ON_BACKGROUND;
         var displayText = 'T';
       } else {
@@ -1681,7 +1681,7 @@ var Display = Component.extend({
       cxt.lineTo(this.x + this.height * 0.3, this.y + this.height * 0.3);
       cxt.stroke();
       cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      if (this.data == true) {
+      if (this.data > 0) {
         cxt.fillStyle = ON_COLOR;
       } else {
         cxt.fillStyle = '#333';
@@ -1926,7 +1926,7 @@ var NotGate = Gate.extend({
   },
   setData: function (data) {
     if (this.outputs['X'] && this.inputs['A'])
-      this.outputs['X'].setData(!this.inputs['A'].data);
+      this.outputs['X'].setData(this.inputs['A'].data == 0 ? 1 : 0);
     return this;
   },
   setHeight: function (h) {
@@ -1983,7 +1983,7 @@ var NandGate = Gate.extend({
   },
   setData: function (data) {
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'])
-      this.outputs['X'].setData(!(this.inputs['A'].data && this.inputs['B'].data));
+      this.outputs['X'].setData((this.inputs['A'].data && this.inputs['B'].data) == 0 ? 1 : 0);
     return this;
   },
   setLocation: function (x, y, inCanvasUnits) {
@@ -2028,7 +2028,7 @@ var NorGate = Gate.extend({
   },
   setData: function (data) {
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'])
-      this.outputs['X'].setData(!(this.inputs['A'].data || this.inputs['B'].data));
+      this.outputs['X'].setData((this.inputs['A'].data || this.inputs['B'].data) == 0 ? 1 : 0);
     return this;
   },
   setLocation: function (x, y, inCanvasUnits) {
@@ -2075,7 +2075,7 @@ var XorGate = Gate.extend({
   },
   setData: function (data) {
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'])
-      this.outputs['X'].setData((this.inputs['A'].data || this.inputs['B'].data) && !(this.inputs['A'].data && this.inputs['B'].data));
+      this.outputs['X'].setData((this.inputs['A'].data || this.inputs['B'].data) && !(this.inputs['A'].data && this.inputs['B'].data) ? 1 : 0);
     return this;
   },
   setLocation: function (x, y, inCanvasUnits) {
