@@ -631,17 +631,6 @@ function drawingBoardMenu(board) {
       }
   });
 
-  /*
-  this.addButton('-', function () {
-      const newUnit = Math.max(5, Math.round(board.unit / 1.5));
-      board.setUnit(newUnit);
-  });
-
-  this.addButton('+', function () {
-      const newUnit = Math.round(board.unit * 1.5);
-      board.setUnit(newUnit);
-  });
-*/
 this.addButton('-', function () {
     const newScale = board.scale / 1.5;
     if (newScale >= 0.1) {
@@ -1345,16 +1334,16 @@ var Connection = Component.extend({
     var dotSize;
     cxt.save();
     this._super(cxt);
-    cxt.beginPath();
     if (this.not) {
       cxt.fillStyle = '#FFF';
       dotSize = this.board.unit / 3;
+      cxt.lineWidth = 2;
     } else {
       cxt.fillStyle = '#000';
       dotSize = 1;
+      cxt.lineWidth = .5;
     }
-    cxt.lineWidth = 2;
-    cxt.moveTo(this.x, this.y);
+    cxt.beginPath();
     cxt.arc(this.x, this.y, dotSize, 0, Math.PI * 2);
     cxt.stroke();
     cxt.fill();
