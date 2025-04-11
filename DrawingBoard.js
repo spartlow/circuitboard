@@ -99,6 +99,21 @@ function getMousePos(canvas, evt) {
  * TODO: Add save/load
  * TODO: Add multiple select (CNTL and select box)
  ***********************************************/
+/*
+About units:
+There are several coordinate unit types in this file. They need some simplifying/clarifying/elimination.
+ 1. Pixel: These are what we get from mouse events as well as canvas.width and .height.
+    Position 0,0 is top left of the board.
+ 2. Canvas units: These are the units used for drawing.
+    Likewise, 0,0 is on the top left of the board.
+    With scale=1 it's the same as pixel units, but with scale=2 canvas 10,10 is at pixels 20,20.
+ 3. Board units: These are always 10 * canvas units (as long as board.unit stays at 10).
+    Components are located by these units, such that location 1,1 is really at canvas 10,10.
+    These are the units in the save file.
+ 4. Component offset: These (poorly named) are percentages relative to the given component.
+    So if a component is a square at 100,100 to 200,200. Then offset 0,0 is 100,100; 1,1 is 200,200; and .5,.5 is 150,150.
+    This does seem dangerous because it could result in non-integer board units when locating connections.
+*/
 function DrawingBoard(node) {
   var board = this; // needed for scoping
   this.version = 0.4;
@@ -408,8 +423,10 @@ function DrawingBoard(node) {
     if (e.type == 'mousemove') {
       if (board.dragging) {
         board.dragging.setLocation(
-          Math.floor((coords.x - board.draggedFromXDelta) / board.unit)
-          , Math.floor((coords.y - board.draggedFromYDelta) / board.unit));
+          Math.floor((coords.x - board.draggedFromXDelta))
+          , Math.floor((coords.y - board.draggedFromYDelta))
+          , true
+        );
       }
     }
     if (e.type == 'mouseout') {
@@ -865,8 +882,8 @@ var Component = Class.extend({
   addSetter: function (att, func) {
     this.setters[att] = func;
   },
-  setLocation: function (x, y, inPixels) {
-    if (inPixels) {
+  setLocation: function (x, y, inCanvasUnits) {
+    if (inCanvasUnits) {
       this.x = x;
       this.y = y;
     } else {
@@ -967,9 +984,9 @@ var Component = Class.extend({
     if (this.height) return this.height;
     else return 0;
   },
-  getCoords: function (inPixels) {
+  getCoords: function (inCanvasUnits) {
     var unit;
-    if (inPixels) unit = 1;
+    if (inCanvasUnits) unit = 1;
     else unit = this.board.unit;
     coords = {};
     coords.x = Math.round(this.x / unit);
@@ -1389,8 +1406,8 @@ var Source = Component.extend({ // $$$ make this a Gate child
     this.addOutput('Z');
     this.outputs['Z'].noLabel = true;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.outputs['W'].setLocation(this.x + this.height / 2, this.y - 1 + this.height * 0.1, true);
     this.outputs['X'].setLocation(this.x + this.height * 0.9 + 1, this.y + this.height / 2, true);
     this.outputs['Y'].setLocation(this.x + this.height / 2, this.y + this.height * 0.9 + 1, true);
@@ -1525,8 +1542,8 @@ var Display = Component.extend({
   setData: function (data) {
     return this._super(data);
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.inputs['A'].setLocation(this.x + this.width * 0.2 - 1, this.y + this.height / 2, true);
     this.inputs['B'].setLocation(this.x + this.width / 2, this.y - 1 + this.height * 0.2, true);
     this.inputs['C'].setLocation(this.x + this.width * 0.8 + 1, this.y + this.height / 2, true);
@@ -1749,8 +1766,8 @@ var AndGate = Gate.extend({
       this.outputs['X'].setData(this.inputs['A'].data && this.inputs['B'].data);
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.inputs['A'].setLocation(this.x, this.y + this.height / 4, true);
     this.inputs['B'].setLocation(this.x, this.y + this.height / 4 * 3, true);
     this.outputs['X'].setLocation(this.x + 1 + this.height, this.y + this.height / 2, true);
@@ -1791,8 +1808,8 @@ var And3Gate = AndGate.extend({
       this.outputs['X'].setData(this.inputs['A'].data && this.inputs['B'].data && this.inputs['C'].data);
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.inputs['B'].setLocation(this.x, this.y + this.height / 2, true);
     this.inputs['C'].setLocation(this.x, this.y + this.height * 3 / 4, true);
     return this;
@@ -1815,8 +1832,8 @@ var OrGate = Gate.extend({
       this.outputs['X'].setData(this.inputs['A'].data || this.inputs['B'].data);
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.inputs['A'].setLocation(this.x + this.height * 0.2, this.y + this.height / 4, true);
     this.inputs['B'].setLocation(this.x + this.height * 0.2, this.y + this.height / 4 * 3, true);
     this.outputs['X'].setLocation(this.x + 1 + this.height, this.y + this.height / 2, true);
@@ -1860,8 +1877,8 @@ var Or3Gate = OrGate.extend({
       this.outputs['X'].setData(this.inputs['A'].data || this.inputs['B'].data || this.inputs['C'].data);
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.inputs['B'].setLocation(this.x + this.height * 0.2, this.y + this.height / 2, true);
     this.inputs['C'].setLocation(this.x + this.height * 0.2, this.y + this.height / 4 * 3, true);
     return this;
@@ -1893,8 +1910,8 @@ var NotGate = Gate.extend({
     this._super(h);
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     var c = this.offset(0, .5);
     this.inputs['A'].setLocation(c.x, c.y, true);
     c = this.offset(1, .5);
@@ -1944,8 +1961,8 @@ var NandGate = Gate.extend({
       this.outputs['X'].setData(!(this.inputs['A'].data && this.inputs['B'].data));
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.inputs['A'].setLocation(this.x, this.y + this.height / 4, true);
     this.inputs['B'].setLocation(this.x, this.y + this.height / 4 * 3, true);
     this.outputs['X'].setLocation(this.x + 1 + this.height, this.y + this.height / 2, true);
@@ -1989,8 +2006,8 @@ var NorGate = Gate.extend({
       this.outputs['X'].setData(!(this.inputs['A'].data || this.inputs['B'].data));
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.inputs['A'].setLocation(this.x + this.height * 0.2, this.y + this.height / 4, true);
     this.inputs['B'].setLocation(this.x + this.height * 0.2, this.y + this.height / 4 * 3, true);
     this.outputs['X'].setLocation(this.x + 1 + this.height, this.y + this.height / 2, true);
@@ -2036,8 +2053,8 @@ var XorGate = Gate.extend({
       this.outputs['X'].setData((this.inputs['A'].data || this.inputs['B'].data) && !(this.inputs['A'].data && this.inputs['B'].data));
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     this.inputs['A'].setLocation(this.x + this.height * 0.2, this.y + this.height / 4, true);
     this.inputs['B'].setLocation(this.x + this.height * 0.2, this.y + this.height / 4 * 3, true);
     this.outputs['X'].setLocation(this.x + 1 + this.height, this.y + this.height / 2, true);
@@ -2115,8 +2132,8 @@ var FullAdder = Gate.extend({
     this.setHeight(2 + 2 * n);
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     var height = this.getHeight()
     var dimInputs = this.getDimInputs()
     var topleft = this.offset(0,0)
@@ -2238,8 +2255,8 @@ var MuxGate = Gate.extend({
     this.setData();
     return this;
   },
-  setLocation: function (x, y, inPixels) {
-    this._super(x, y, inPixels);
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
     var c = this.offset(1, .5); this.outputs['X'].setLocation(c.x, c.y, true)
     var unit = this.board.unit / this.height;
     for (var i = 0; i < this.getNumInputs(); i++) {
