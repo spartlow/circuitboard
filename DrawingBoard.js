@@ -852,7 +852,7 @@ var ComponentMenu = function (board, parentNode) {
         board.draw();
       });
       if (!comp.isWire && !comp.isConnection && !comp.isSource && !comp.isDisplay) this.addButton('Rotate', function (e) {
-        comp.setRotation((comp.getRotation() + 45));
+        comp.setRotation((comp.getRotation() + 90)); // Need to stick with 90 so wires are always on whole board units
         board.draw();
       });
       if (comp.isWire) this.addButton('Add Waypoint', function (e) {
@@ -2164,12 +2164,18 @@ var FullAdder = Gate.extend({
     var topleft = this.offset(0,0)
     var topright = this.offset(1,0)
     var space = height / (2 + dimInputs * 2); // the space above, below, and between each dot in a set of inputs/outputs
-    this.inputs['C'].setLocation(topleft.x, topleft.y + space, true)
-    this.outputs['C'].setLocation(topright.x, topright.y + space * (1 + dimInputs * 2), true)
+    var unit = this.board.unit / this.height; // percentage of height that is one board unit
+    //this.inputs['C'].setLocation(topleft.x, topleft.y + space, true)
+    var c = this.offset(0, unit * 1); this.inputs['C'].setLocation(c.x, c.y, true);
+    //this.outputs['C'].setLocation(topright.x, topright.y + space * (1 + dimInputs * 2), true)
+    c = this.offset(1, unit * (1 + dimInputs * 2)); this.outputs['C'].setLocation(c.x, c.y, true);
     for (var i = 0; i < dimInputs; i++) {
-      this.inputs['A' + i].setLocation(topleft.x, topleft.y + space * (2 + i), true); // Start just after Cin
-      this.inputs['B' + i].setLocation(topleft.x, topleft.y + space * (2 + dimInputs + i), true); // Start after A0-n
-      this.outputs['S' + i].setLocation(topright.x, topright.y + space * (1 + i), true); // Start at top right
+      //this.inputs['A' + i].setLocation(topleft.x, topleft.y + space * (2 + i), true); // Start just after Cin
+      c = this.offset(0, unit * (i + 2)); this.inputs['A' + i].setLocation(c.x, c.y, true);
+      //this.inputs['B' + i].setLocation(topleft.x, topleft.y + space * (2 + dimInputs + i), true); // Start after A0-n
+      c = this.offset(0, unit * (i + 2 + dimInputs)); this.inputs['B' + i].setLocation(c.x, c.y, true);
+      //this.outputs['S' + i].setLocation(topright.x, topright.y + space * (1 + i), true); // Start at top right
+      c = this.offset(1, unit * (i + 1)); this.outputs['S' + i].setLocation(c.x, c.y, true);
     }
     return this;
   },
@@ -2196,7 +2202,7 @@ var FullAdder = Gate.extend({
     cxt.shadowColor = "#0000"; // turn off shadow
     cxt.translate(this.x + this.getWidth() / 2, this.y + this.getHeight() / 2); // make center into 0,0
     //var degrees = this.getRotation();
-    //cxt.rotate(this.rotation);
+    cxt.rotate(this.rotation);
     cxt.fillText('+', 0, 0); // centered
     cxt.closePath();
     cxt.restore(); // restore rotation
@@ -2284,7 +2290,7 @@ var MuxGate = Gate.extend({
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
     var c = this.offset(1, .5); this.outputs['X'].setLocation(c.x, c.y, true)
-    var unit = this.board.unit / this.height;
+    var unit = this.board.unit / this.height; // percentage of height that is one board unit
     for (var i = 0; i < this.getNumInputs(); i++) {
       var c = this.offset(0, unit * (2 * i + 1)); this.inputs[i].setLocation(c.x, c.y, true);
     }
