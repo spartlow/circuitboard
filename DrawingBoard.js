@@ -592,7 +592,7 @@ function drawingBoardMenu(board) {
     this.node.appendChild(button);
   }
   this.node = document.createElement('div');
-  this.node.setAttribute('style', `z-index: 100; position: absolute; top: 0; left: 0; display: inline-block; width: ${board.node.clientWidth}px; height: 50px;`);
+  this.node.setAttribute('style', `z-index: 100; position: absolute; top: 2px; left: 2px; display: inline-block;`);
   this.node.classList.add('board-menu', 'board-main-menu');
   this.node.innerHTML = 'Menu:';
 
@@ -704,9 +704,8 @@ function partsMenu(board) {
     this.node.appendChild(button.node);
   }
   this.node = document.createElement('div');
-  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 0; right: 0; display: inline-block; width: 150px; height: 50px;');
-  this.node.classList.add('board-menu');
-  this.node.classList.add('board-part-menu');
+  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 2px; right: 1px; display: inline-block;');
+  this.node.classList.add('board-menu', 'board-parts-menu');
   this.node.innerHTML = 'Parts:';
   this.addButton('Wire', function (e, origBuildingWire) {
     this.toggleActive();
@@ -810,9 +809,8 @@ var ComponentMenu = function (board, parentNode) {
     this.node.appendChild(button.node);
   }
   this.node = document.createElement('div');
-  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 200px; right: 0; display: inline-block; width: 150px; height: 50px;');
-  this.node.classList.add('board-menu');
-  this.node.classList.add('board-component-menu');
+  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 200px; right: 1px; display: inline-block;');
+  this.node.classList.add('board-menu', 'board-component-menu');
   this.component = null;
   this.update = function () {
     if (!board.selected) {
