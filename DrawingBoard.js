@@ -1816,6 +1816,7 @@ var AndGate = Gate.extend({
     this.addOutput('X');
   },
   setData: function (output) {
+    if (this.deleted) return this; // don't bother
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'])
       this.outputs['X'].setData(this.inputs['A'].data && this.inputs['B'].data);
     return this;
@@ -1858,6 +1859,7 @@ var And3Gate = AndGate.extend({
     this.addInput('C');
   },
   setData: function (data) {
+    if (this.deleted) return this; // don't bother
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'] && this.inputs['C'])
       this.outputs['X'].setData(this.inputs['A'].data && this.inputs['B'].data && this.inputs['C'].data);
     return this;
@@ -1882,6 +1884,7 @@ var OrGate = Gate.extend({
     this.addOutput('X');
   },
   setData: function (data) {
+    if (this.deleted) return this; // don't bother
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'])
       this.outputs['X'].setData(this.inputs['A'].data || this.inputs['B'].data);
     return this;
@@ -1927,6 +1930,7 @@ var Or3Gate = OrGate.extend({
     this.addInput('C');
   },
   setData: function (data) {
+    if (this.deleted) return this; // don't bother
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'] && this.inputs['C'])
       this.outputs['X'].setData(this.inputs['A'].data || this.inputs['B'].data || this.inputs['C'].data);
     return this;
@@ -1954,6 +1958,7 @@ var NotGate = Gate.extend({
     this.outputs['X'].labelLeft = this.board.unit * 1.5;
   },
   setData: function (data) {
+    if (this.deleted) return this; // don't bother
     if (this.outputs['X'] && this.inputs['A'])
       this.outputs['X'].setData(this.inputs['A'].data == 0 ? 1 : 0);
     return this;
@@ -2011,6 +2016,7 @@ var NandGate = Gate.extend({
     this.outputs['X'].setTypeNot();
   },
   setData: function (data) {
+    if (this.deleted) return this; // don't bother
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'])
       this.outputs['X'].setData((this.inputs['A'].data && this.inputs['B'].data) == 0 ? 1 : 0);
     return this;
@@ -2056,6 +2062,7 @@ var NorGate = Gate.extend({
     this.outputs['X'].setTypeNot();
   },
   setData: function (data) {
+    if (this.deleted) return this; // don't bother
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'])
       this.outputs['X'].setData((this.inputs['A'].data || this.inputs['B'].data) == 0 ? 1 : 0);
     return this;
@@ -2103,6 +2110,7 @@ var XorGate = Gate.extend({
     this.addOutput('X');
   },
   setData: function (data) {
+    if (this.deleted) return this; // don't bother
     if (this.outputs['X'] && this.inputs['A'] && this.inputs['B'])
       this.outputs['X'].setData((this.inputs['A'].data || this.inputs['B'].data) && !(this.inputs['A'].data && this.inputs['B'].data) ? 1 : 0);
     return this;
@@ -2262,6 +2270,7 @@ var MuxGate = Gate.extend({
     this.setNumInputs(2);
   },
   setData: function (data) {
+    if (this.deleted) return this; // don't bother
     var selection = '';
     for (var i = 0; i < this.selects.length; i++) {
       var temp = (0 + this.selects[i].data)
