@@ -341,8 +341,8 @@ function DrawingBoard(node) {
     }
     return null;
   };
-  this.createMenu = function () {
-    this.menu = new drawingBoardMenu(this);
+  this.createMenu = function (args) {
+    this.menu = new drawingBoardMenu(this, args);
     /* Next shrink the canvases to make room */
     for (var i = 0; i < this.canvases.length; i++) {
       //this.canvases[i].setAttribute('height', this.node.clientHeight - this.menu.node.clientHeight);
