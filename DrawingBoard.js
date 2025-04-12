@@ -505,6 +505,9 @@ function DrawingBoard(node) {
     delete me.pointerCoords;
     return me;
   },
+  this.clear = function() {
+    this.components = [];
+  };
   this.export = function () {
     var obj = {};
     obj.type = "DrawingBoard";
@@ -600,7 +603,7 @@ function DrawingBoard(node) {
  * drawingBoardMenu
  * Creates and controls menu for drawing board
  ***********************************************/
-function drawingBoardMenu(board) {
+function drawingBoardMenu(board, args) {
   this.addButton = function (content, action) {
     var button = document.createElement('div');
     //button.setAttribute('style', 'display: inline-block; height: 20px; border: solid 1px; margin: 1px;');
@@ -615,9 +618,28 @@ function drawingBoardMenu(board) {
   this.node.innerHTML = 'Menu:';
 
   // Add buttons to the menu
-  this.addButton('Export', function (e) {
+  if (args && args['saveFunc']) {
+      this.addButton('Save', function () {
+        try {
+            const json = board.export();
+            args['saveFunc'](json);
+        } catch (error) {
+            console.error("Error saving board:", error);
+        }
+    });
+  }
+  if (args && args['loadFunc']) {
+      this.addButton('Load', function () {
+        try {
+            args['loadFunc']();
+        } catch (error) {
+            console.error("Error loading board:", error);
+        }
+    });
+  }
+
+  this.addButton('Export', function () {
       try {
-          e.preventDefault();
           const json = board.export();
           const jsonArea = document.getElementById('jsonArea');
           jsonArea.innerHTML = json;
