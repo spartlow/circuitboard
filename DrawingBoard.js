@@ -615,8 +615,9 @@ function drawingBoardMenu(board) {
   this.node.innerHTML = 'Menu:';
 
   // Add buttons to the menu
-  this.addButton('Export', function () {
+  this.addButton('Export', function (e) {
       try {
+          e.preventDefault();
           const json = board.export();
           const jsonArea = document.getElementById('jsonArea');
           jsonArea.innerHTML = json;
@@ -625,7 +626,8 @@ function drawingBoardMenu(board) {
       }
   });
 
-  this.addButton('Import', function () {
+  this.addButton('Import', function (e) {
+      e.preventDefault();
       const inputData = window.prompt("Paste import data", '{}');
       if (inputData) {
           try {
@@ -636,16 +638,18 @@ function drawingBoardMenu(board) {
       }
   });
 
-  this.addButton('Copy', function () {
-      try {
+  this.addButton('Copy', function (e) {
+    e.preventDefault();
+    try {
           copiedData = JSON.stringify(board);
       } catch (error) {
           console.error("Error copying board data:", error);
       }
   });
 
-  this.addButton('Paste', function () {
-      if (copiedData) {
+  this.addButton('Paste', function (e) {
+    e.preventDefault();
+    if (copiedData) {
           try {
               board.import(copiedData);
           } catch (error) {
@@ -656,7 +660,8 @@ function drawingBoardMenu(board) {
       }
   });
 
-  this.addButton('Print', function () {
+  this.addButton('Print', function (e) {
+      e.preventDefault();
       const jsonArea = document.getElementById('jsonArea');
       if (jsonArea) {
           jsonArea.innerHTML = copiedData || "No data to print.";
@@ -665,14 +670,16 @@ function drawingBoardMenu(board) {
       }
   });
 
-this.addButton('-', function () {
+this.addButton('-', function (e) {
+    e.preventDefault();
     const newScale = board.scale / 1.5;
     if (newScale >= 0.1) {
       board.setScale(newScale);
     }
 });
 
-this.addButton('+', function () {
+this.addButton('+', function (e) {
+    e.preventDefault();
     const newScale = board.scale * 1.5;
     if (newScale <= 10) {
       board.setScale(newScale);
