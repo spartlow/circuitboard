@@ -5,7 +5,9 @@
 <script src="DrawingBoard.js"></script>
 <script type="text/javascript">
 //<![CDATA[
+var globalBoard;
 function setupBoard(board) {
+  globalBoard = board;
   board.createMenu();
   board.createPartsMenu();
 }

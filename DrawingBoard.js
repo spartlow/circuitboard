@@ -255,6 +255,20 @@ function DrawingBoard(node) {
     if (this.dragging == component) this.stopDragging();
     removeElementFromArray(this.components, component);
   }
+  this.getComponentsBoundingRect = function () {
+    var rect = null;
+    for (var i in this.components) {
+      var compRect = this.components[i].getBoundingRect();
+      if (rect == null) rect = compRect;
+      else {
+        if (compRect.top < rect.top) rect.top = compRect.top;
+        if (compRect.left < rect.left) rect.left = compRect.left;
+        if (compRect.right > rect.right) rect.right = compRect.right;
+        if (compRect.bottom > rect.bottom) rect.bottom = compRect.bottom;
+      }
+    }
+    return rect;
+  };
   this.draw = function () {
     if (!this.drewGrid) this.drawGrid();
     for (i in this.contexts) {
@@ -1036,6 +1050,17 @@ var Component = Class.extend({
     coords.x = Math.round(this.x / unit);
     coords.y = Math.round(this.y / unit);
     return coords;
+  },
+  getBoundingRect: function(inCanvasUnits) {
+    var unit;
+    if (inCanvasUnits) unit = 1;
+    else unit = this.board.unit;
+    rect = {};
+    rect.left = this.x / unit;
+    rect.top = this.y / unit;
+    rect.right = (this.x + this.getWidth()) / unit;
+    rect.bottom = (this.y + this.getHeight()) / unit;
+    return rect;
   },
   /** Get coords relative to the Component.
    * offset(.5,.5) will return the center of the object */
