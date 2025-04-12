@@ -122,7 +122,7 @@ There are several coordinate unit types in this file. They need some simplifying
 */
 function DrawingBoard(node) {
   var board = this; // needed for scoping
-  this.version = 0.4;
+  this.version = 0.5;
   this.unit = 10; // TODO remove board.unit. Or make it just mean where points can snap?
   this.scale = 1;
   this.delay = 100;
