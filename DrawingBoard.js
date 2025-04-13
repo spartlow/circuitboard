@@ -125,6 +125,7 @@ function DrawingBoard(node) {
   this.version = 0.5;
   this.unit = 10; // TODO remove board.unit. Or make it just mean where points can snap?
   this.scale = 1;
+  this.translation = new Point(0,0);
   this.delay = 100;
   this.node = node;
   this.idPrefix = 'id';
@@ -186,63 +187,79 @@ function DrawingBoard(node) {
     return px / this.scale;
   };
   /* Translate x/y coordinate from pixels to canvas coordinate unit, taking into account the scaling */
-  this.pixelCoordToCanvasCoord = function(c) {
-    newCoord = {x: this.pixelToCanvasUnit(c.x), y: this.pixelToCanvasUnit(c.y)};
-    return newCoord;
+  this.pixelCoordToCanvasCoord = function(pixelPoint) {
+    //newCoord = {x: this.pixelToCanvasUnit(c.x), y: this.pixelToCanvasUnit(c.y)};
+    //return newCoord;
+    //const rect = canvas.getBoundingClientRect();
+    //const x = event.clientX - rect.left;
+    //const y = event.clientY - rect.top;
+    ctx = this.contexts[0];
+    const transform = ctx.getTransform();
+    const invTransform = transform.inverse();
+    var point = new Point(
+      Math.round(invTransform.e + (pixelPoint.x * invTransform.a) + (pixelPoint.y * invTransform.c)),
+      Math.round(invTransform.f + (pixelPoint.x * invTransform.b) + (pixelPoint.y * invTransform.d))
+    );
+    return point;
   };
   this.drawGrid = function () {
     this.drewGrid = true;
-    this.contexts[0].clearRect(0, 0, this.canvases[0].width / this.scale, this.canvases[0].height / this.scale);
+    var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
+    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
+    var left = topLeft.x;
+    var top = topLeft.y;
+    var right = botRight.x;
+    var bottom = botRight.y;
+    this.contexts[0].clearRect(left, top, right - left, bottom - top);
     if (this.noGrid) return;
+    var increment = this.unit;
     this.contexts[0].lineWidth = .5;
     this.contexts[0].beginPath();
     this.contexts[0].strokeStyle = '#EEE';
-    for (var x = 0; x < this.canvases[0].width / this.scale; x += this.unit) {
-      this.contexts[0].moveTo(x, 0);
-      this.contexts[0].lineTo(x, this.canvases[0].height / this.scale);
+    for (var x = Math.floor(left / increment) * increment; x < right; x += increment) {
+      this.contexts[0].moveTo(x, top);
+      this.contexts[0].lineTo(x, bottom);
     }
-    for (var y = 0; y < this.canvases[0].height / this.scale; y += this.unit) {
-      this.contexts[0].moveTo(0, y);
-      this.contexts[0].lineTo(this.canvases[0].width / this.scale, y);
+    for (var y = Math.floor(top / increment) * increment; y < bottom; y += increment) {
+      this.contexts[0].moveTo(left, y);
+      this.contexts[0].lineTo(right, y);
     }
     this.contexts[0].stroke();
     this.contexts[0].closePath();
 
     /* Now draw major lines */
+    var increment = this.unit * 10;
     this.contexts[0].lineWidth = 1;
     this.contexts[0].beginPath();
     this.contexts[0].strokeStyle = '#CCC';
-    this.contexts[0].stroke();
-    this.contexts[0].closePath();
-    for (var x = 0; x < this.canvases[0].width / this.scale; x += this.unit * 10) {
-      this.contexts[0].moveTo(x, 0);
-      this.contexts[0].lineTo(x, this.canvases[0].height / this.scale);
+    for (var x = Math.floor(left / increment) * increment; x < right; x += increment) {
+      this.contexts[0].moveTo(x, top);
+      this.contexts[0].lineTo(x, bottom);
     }
-    for (var y = this.unit * 10; y < this.canvases[0].height / this.scale; y += this.unit * 10) {
-      this.contexts[0].moveTo(0, y);
-      this.contexts[0].lineTo(this.canvases[0].width / this.scale, y);
+    for (var y = Math.floor(top / increment) * increment; y < bottom; y += increment) {
+      this.contexts[0].moveTo(left, y);
+      this.contexts[0].lineTo(right, y);
     }
     this.contexts[0].stroke();
     this.contexts[0].closePath();
 
     /* Now draw major major lines */
+    var increment = this.unit * 100;
     this.contexts[0].lineWidth = 2;
     this.contexts[0].beginPath();
     this.contexts[0].strokeStyle = '#AAA';
     this.contexts[0].stroke();
     this.contexts[0].closePath();
-    for (var x = 0; x < this.canvases[0].width / this.scale; x += this.unit * 100) {
-      this.contexts[0].moveTo(x, 0);
-      this.contexts[0].lineTo(x, this.canvases[0].height / this.scale);
+    for (var x = Math.floor(left / increment) * increment; x < right; x += increment) {
+      this.contexts[0].moveTo(x, top);
+      this.contexts[0].lineTo(x, bottom);
     }
-    for (var y = 0; y < this.canvases[0].height / this.scale; y += this.unit * 100) {
-      this.contexts[0].moveTo(0, y);
-      this.contexts[0].lineTo(this.canvases[0].width / this.scale, y);
+    for (var y = Math.floor(top / increment) * increment; y < bottom; y += increment) {
+      this.contexts[0].moveTo(left, y);
+      this.contexts[0].lineTo(right, y);
     }
     this.contexts[0].stroke();
     this.contexts[0].closePath();
-
-
   };
   this.addComponent = function (component) {
     this.components.push(component);
@@ -270,9 +287,11 @@ function DrawingBoard(node) {
     return rect;
   };
   this.draw = function () {
+    var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
+    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
     if (!this.drewGrid) this.drawGrid();
     for (i in this.contexts) {
-      if (i != 0) this.contexts[i].clearRect(0, 0, this.canvases[i].width / this.scale, this.canvases[i].height / this.scale);
+      if (i != 0) this.contexts[i].clearRect(topLeft.x, topLeft.y, botRight.x - topLeft.x, botRight.y - topLeft.y);
     }
     for (i in this.components) {
       if (this.components[i].isWire) {
@@ -384,6 +403,17 @@ function DrawingBoard(node) {
     this.draw();
     return this;
   };
+  this.setTranslation = function(x, y) {
+    if (y == null) {var point = x}
+    else {point = new Point(x,y)}
+    for (var i in this.contexts) {
+      this.contexts[i].translate(point.x - this.translation.x, point.y - this.translation.y)
+    }
+    this.translation = point;
+    this.drewGrid = false; // need to draw the grid again
+    this.draw();
+    return this;
+  };
   this.setUnit = function (unit) {
     var oldUnit = this.unit;
     this.unit = unit;
@@ -403,11 +433,14 @@ function DrawingBoard(node) {
   };
   this.listener = function (e) {
     e.stopPropagation();
-    var coords = board.pixelCoordToCanvasCoord(getMousePos(board.canvases[board.canvases.length - 1], e));
+    var mouseCoords = getMousePos(board.canvases[board.canvases.length - 1], e);
+    var coords = board.pixelCoordToCanvasCoord(mouseCoords);
     board.pointerCoords = coords;
     var toolTip = document.getElementById("drawingBoardHoverText");
     if (toolTip == null) toolTip = {};
     toolTip.innerHTML = '' + Math.round(coords.x / board.unit) + ',' + Math.round(coords.y / board.unit);
+    toolTip.innerHTML += ' (c=' + Math.round(coords.x) + ',' + Math.round(coords.y);
+    toolTip.innerHTML += ', p=' + Math.round(mouseCoords.x) + ',' + Math.round(mouseCoords.y) + ')';
     if (board.buildingWire) {
       var comp = board.findClosestConnection(coords, 20, function (candidate) {
         var newIn = candidate.acceptingSources();
@@ -517,6 +550,7 @@ function DrawingBoard(node) {
     delete me.draggedFromXDelta;
     delete me.draggedFromYDelta;
     delete me.pointerCoords;
+    delete me.translation;
     return me;
   },
   this.clear = function() {
@@ -611,6 +645,7 @@ function DrawingBoard(node) {
   }
   // Initial resize to fit the current viewport
   this.resizeCanvases();
+  this.setTranslation(new Point(155,155));
 }
 
 /***********************************************
@@ -1085,7 +1120,7 @@ var Component = Class.extend({
     */
     var width = this.getWidth();
     var height = this.getHeight();
-    var pt = new Point((x * width) + this.x, (y * height) + this.y); // turn into pixels
+    var pt = new Point((x * width) + this.x, (y * height) + this.y); // turn into canvas units
     var center = new Point(this.x + width / 2, this.y + height / 2);
     return pt.getRotatedClockwise(this.rotation, center);
   },
@@ -1805,7 +1840,7 @@ var Gate = Component.extend({ // rename to ParentComponent???
   containsPoint: function (x, y) {
     var width = (this.width) ? this.width : this.height; // default width to height
     if (this.rotation) {
-      var point = new Point(x, y)
+      var point = new Point(x, y);
       point = point.getRotatedCounterclockwise(this.rotation, new Point(this.x + width / 2, this.y + this.height / 2)); // rotate along with item
       x = point.x; y = point.y;
     }
@@ -2439,9 +2474,12 @@ var MuxGate = Gate.extend({
 
 /***********************************************
  * Point function
- *
+ * All coordinates are in canvas units unless otherwise stated
  ***********************************************/
 function Point(x, y) {
+  if (typeof x != "number" || typeof y != "number") {
+    throw "Unexpected input to Point";
+  }
   this.x = x;
   this.y = y;
   this.get = function (att) {
@@ -2472,6 +2510,27 @@ function Point(x, y) {
     return newPoint;
   }
 }
+/***********************************************
+ * Rectangle function
+ *
+ ***********************************************/
+function Rectangle(left, top, right, bottom) {
+  if (typeof left == "number") {
+    this.topLeft = new Point(left, top);
+    this.bottomRight = new Point(right, bottom);
+  } else { // expect two points
+    this.topLeft = left;
+    this.bottomRight = top;
+  }
+  this.get = function (att) {
+    return this[att];
+  }
+  this.set = function (att, val) {
+    this[att] = val;
+    return this;
+  }
+}
+
 /***********************************************
  * pad function
  * Right justify number to the given length with specified pad char
