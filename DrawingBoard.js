@@ -148,6 +148,7 @@ function DrawingBoard(node) {
 
   // Resize canvases to fit the parent node
   this.resizeCanvases = function () {
+    var oldCenter = this.getPointFromNormalizedCoords(.5, .5);
     const width = node.clientWidth;
     const height = node.clientHeight;
 
@@ -155,6 +156,7 @@ function DrawingBoard(node) {
       this.canvases[i].width = width;
       this.canvases[i].height = height;
     }
+    this.centerCanvasOn(oldCenter);
 
     // Redraw the board after resizing
     this.drewGrid = false; // need to draw the grid again
@@ -300,18 +302,35 @@ function DrawingBoard(node) {
     }
     return rect;
   };
-  this.transformToFit = function transformToFit() {
-    // Get back to no transform (easier to set scale later)
+  this.resetTransforms = function resetTransforms() {
     for (i in this.contexts) {
       this.contexts[i].resetTransform();
     }
     this.scale = 1;
     this.translation = new Point(0,0);
+    this.drewGrid = false;
+  };
+  this.centerCanvasOn = function centerCanvasOn(center) {
+    var canvasCenter = this.getPointFromNormalizedCoords(.5, .5);
+    var translation = new Point(
+      Math.round(canvasCenter.x - center.x),
+      Math.round(canvasCenter.y - center.y)
+    );
+    this.setTranslation(translation); // This will cause a the canvases to draw
+  };
+  this.centerDesign = function centerDesign() {
     var designRect = this.getDesignBoundingRect();
     if (designRect === null) {
       designRect = new Rectangle(-1, -1, 1, 1);
-      scale = 1;
-    } else {
+    }
+    var designCenter = designRect.getPointFromNormalizedCoords(.5, .5);
+    this.centerCanvasOn(designCenter);
+  };
+  this.transformToFit = function transformToFit() {
+    // Get back to no transform (easier to set scale later)
+    this.resetTransforms();
+    var designRect = this.getDesignBoundingRect();
+    if (designRect !== null) {
       var canvasRect = this.getCanvasBoundingRect();
       var scale = Math.min(
         (canvasRect.getWidth() / designRect.getWidth()),
@@ -322,23 +341,12 @@ function DrawingBoard(node) {
       scale = Math.pow(2, Math.floor(Math.log2(scale))); // Round down to power of 2
       scale = Math.min(1, scale);
       scale = Math.max(0.1, scale);
+      console.log(scale);
+      this.scale = scale;
+      this.commitTransforms();
     }
-    console.log(scale);
-    for (i in this.contexts) {
-      this.contexts[i].scale(scale, scale)
-    }
-    this.scale = scale;
-    /* We now have a new canvas boundint rect, so get it again */
-    canvasRect = this.getCanvasBoundingRect();
-    var canvasCenter = this.getPointFromNormalizedCoords(.5, .5);
-    var designCenter = designRect.getPointFromNormalizedCoords(.5, .5);
-    // TODO translate canvas so design is at center
-    var translation = new Point(
-      Math.round(canvasCenter.x - designCenter.x),
-      Math.round(canvasCenter.y - designCenter.y)
-    );
-    console.log(translation);
-    this.setTranslation(translation); // This will cause a the canvases to draw
+    this.centerDesign();
+    this.draw();
     return;
   };
   this.draw = function () {
@@ -446,27 +454,29 @@ function DrawingBoard(node) {
       //this.canvases[i].style.top = ''+this.partsMenu.node.clientHeight+'px';
     }
   };
-  this.setScale = function (s) {
-    var oldScale = this.scale;
-    this.scale = s;
-    if (oldScale != this.unit) {
-      for (i in this.contexts) {
-        this.contexts[i].scale(this.scale / oldScale, this.scale / oldScale)
-      }
+  this.commitTransforms = function () {
+    for (i in this.contexts) {
+      this.contexts[i].resetTransform();
+      this.contexts[i].scale(this.scale, this.scale)
+      this.contexts[i].translate(this.translation.x, this.translation.y)
     }
-    // TODO Set translation to keep the center the same
+    console.log(this.scale);
+    console.log(this.translation);
     this.drewGrid = false; // need to draw the grid again
+    // Caller needs to ensure this.draw is called
+  };
+  this.setScale = function (s) {
+    this.scale = s;
+    this.commitTransforms();
+    // TODO Set translation to keep the center the same
     this.draw();
     return this;
   };
   this.setTranslation = function(x, y) {
     if (y == null) {var point = x}
     else {point = new Point(x,y)}
-    for (var i in this.contexts) {
-      this.contexts[i].translate(point.x - this.translation.x, point.y - this.translation.y)
-    }
     this.translation = point;
-    this.drewGrid = false; // need to draw the grid again
+    this.commitTransforms();
     this.draw();
     return this;
   };
@@ -700,7 +710,7 @@ function DrawingBoard(node) {
     }
   }
   // Initial resize to fit the current viewport
-  //this.resizeCanvases();
+  this.resizeCanvases();
   this.transformToFit();
   //this.setTranslation(new Point(155,155));
 }
