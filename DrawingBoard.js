@@ -388,12 +388,9 @@ function DrawingBoard(node) {
       var cxt = this.contexts[1]; // use wire context
       cxt.save();
       cxt.beginPath();
-      cxt.lineWidth = 1;
-      if (this.data > 0) {
-        cxt.strokeStyle = ON_COLOR;
-      } else {
-        cxt.strokeStyle = '#000';
-      }
+      if (this.buildingBus) cxt.lineWidth = 4;
+      else cxt.lineWidth = 1;
+      cxt.strokeStyle = '#000';
       cxt.shadowBlur = 5;
       cxt.shadowColor = SELECT_BACKGROUND;
       cxt.shadowOffsetX = 5;
@@ -401,6 +398,17 @@ function DrawingBoard(node) {
       cxt.moveTo(from.x, from.y);
       cxt.lineTo(to.x, to.y);
       cxt.stroke();
+      if (this.buildingBus) {
+        cxt.lineWidth = 2;
+        cxt.strokeStyle = '#FFF';
+        cxt.shadowBlur = 5;
+        cxt.shadowColor = SELECT_BACKGROUND;
+        cxt.shadowOffsetX = 5;
+        cxt.shadowOffsetY = 5;
+        cxt.moveTo(from.x, from.y);
+        cxt.lineTo(to.x, to.y);
+        cxt.stroke();
+      }
       cxt.closePath();
       cxt.restore();
     }
@@ -509,6 +517,7 @@ function DrawingBoard(node) {
     toolTip.innerHTML += ', p=' + Math.round(mouseCoords.x) + ',' + Math.round(mouseCoords.y) + ')';
     if (board.buildingWire) {
       var comp = board.findClosestConnection(coords, 20, function (candidate) {
+        // TODO Reject if Bus and not Digital. and vice versa. Perhaps compatible function to check for itself??
         var newIn = candidate.acceptingSources();
         var newOut = candidate.acceptingTargets();
         if (board.buildingWireConnection) {
@@ -534,6 +543,7 @@ function DrawingBoard(node) {
       if (board.buildingWire) {
         if (board.selected) {
           if (board.buildingWireConnection) {
+            // TODO Reject if Bus and not Digital. and vice versa. Perhaps compatible function to check for itself??
             if (board.selected.acceptingSources() && board.buildingWireConnection.acceptingTargets()) {
               var from = board.buildingWireConnection;
               var to = board.selected;
@@ -541,7 +551,8 @@ function DrawingBoard(node) {
               var from = board.selected;
               var to = board.buildingWireConnection;
             } else throw "Can't build wire here!";
-            new Wire(board).addSource(from).addTarget(to);
+            if (board.buildingBus) new Bus(board).addSource(from).addTarget(to);
+            else new Wire(board).addSource(from).addTarget(to);
             board.buildingWireConnection = null; // build a new wire
           } else {
             board.buildingWireConnection = board.selected;
@@ -872,6 +883,7 @@ function partsMenu(board) {
         menu.activeButton.deactivate(); // deactivate other button
       }
       board.buildingWire = false; // default to turning off
+      board.buildingBus = false; // default to turning off
       action.call(button, e);
     }
     this.node.appendChild(button.node);
@@ -885,6 +897,14 @@ function partsMenu(board) {
     board.buildingWire = this.active;
     board.buildingWireConnection = null;
   });
+/* TODO enable
+  this.addButton('Bus', function (e) {
+    this.toggleActive();
+    board.buildingWire = this.active;
+    board.buildingBus = this.active;
+    board.buildingWireConnection = null;
+  });
+*/
   this.addButton('Source', function (e) {
     var canvasCenter = board.getCanvasCenter();
     var comp = new Source(board).setLocation(canvasCenter.x, canvasCenter.y);
@@ -1177,7 +1197,6 @@ var Component = Class.extend({
     return coords;
   },
   getBoundingRect: function() {
-    var unit;
     var left = this.x;
     var top = this.y;
     var right = (this.x + this.getWidth());
@@ -1399,12 +1418,14 @@ var Wire = Component.extend({
     else return this;
   },
   addTarget: function (component, noCallBack) {
+    //if (this.className=="Wire" && component.isDigital) throw "Wire can't connect to digital target"
     for (var i = 0; i < this.sources.length; i++) {
       if (component.getTopParent() == this.sources[i].getTopParent()) throw "Can't connect wire to self";
     }
     return this._super(component, noCallBack);
   },
   addSource: function (component, noCallBack) {
+    //if (this.className=="Wire" && component.isDigital) throw "Wire can't connect to digital spource"
     for (var i = 0; i < this.targets.length; i++) {
       if (component.getTopParent() == this.targets[i].getTopParent()) throw "Can't connect wire to self";
     }
@@ -1484,6 +1505,72 @@ var Wire = Component.extend({
     return obj;
   }
 }); // End Wire
+/***********************************************
+ * Bus class
+ * Connects and transmits digital data between components
+ ***********************************************/
+var Bus = Wire.extend({
+  init: function (board) {
+    this._super(board);
+    this.className = 'Bus';
+    this.dim = 8;
+  },
+  // inherit setData from Wire
+  addWaypoint: function (x, y, returnWaypoint) {
+    if (x == null || y == null) {
+      x = Math.round((this.sources[0].x + this.targets[0].x) / 2 / this.board.unit); // pick midway point
+      y = Math.round((this.sources[0].y + this.targets[0].y) / 2 / this.board.unit); // pick midway point
+    }
+    // TBD make waypoint a component with a square or circle around the connection?
+    var corner = new DigitalConnection(this.board).setLocation(x, y);
+    var bus = new Bus(this.board).addSource(corner);
+    if (this.targets[0]) {
+      var endpoint = this.targets[0];
+      this.removeTarget(endpoint);
+      bus.addTarget(endpoint);
+    }
+    this.addTarget(corner);
+    if (returnWaypoint) return corner;
+    else return this;
+  },
+  addTarget: function (component, noCallBack) {
+    //if (!component.isDigital) throw "Bus can only connect to digital source"
+    return this._super(component, noCallBack);
+  },
+  addSource: function (component, noCallBack) {
+    //if (!component.isDigital) throw "Bus can only connect to digital source"
+    return this._super(component, noCallBack);
+  },
+  // Inherit containsPoint from Wire
+  // Inherit getBoundingRect from Wire
+  draw: function (cxt) {
+    if (this.sources.length == 0 || this.targets.length == 0) return;
+    cxt.save();
+    this._super(cxt);
+    cxt.beginPath();
+    cxt.strokeStyle = '#000';
+    cxt.lineWidth = 4;
+    cxt.moveTo(this.sources[0].x, this.sources[0].y);
+    cxt.lineTo(this.targets[0].x, this.targets[0].y);
+    cxt.stroke();
+
+    if (this.data > 0) {
+      cxt.strokeStyle = ON_COLOR;
+    } else {
+      cxt.strokeStyle = '#FFF';
+    }
+    cxt.lineWidth = 2;
+    cxt.moveTo(this.sources[0].x, this.sources[0].y);
+    cxt.lineTo(this.targets[0].x, this.targets[0].y);
+    cxt.stroke();
+
+    cxt.closePath();
+    cxt.restore();
+    return this;
+  },
+  // Inherit export from Wire
+  // Inherit import from Wire
+}); // End Bus
 /***********************************************
  * Connection class
  * An individual point, typically for another component
@@ -1756,6 +1843,7 @@ var Display = Component.extend({
     return this;
   },
   setMaxDigits: function (d) {
+    if (d > 1) this.isDigital = true;
     this.digits = d;
     this.width = this.height + (this.board.unit * (this.digits - 1));
     this.setLocation(this.x, this.y, true); // reset input connections
