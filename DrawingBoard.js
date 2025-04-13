@@ -313,17 +313,18 @@ function DrawingBoard(node) {
   this.centerCanvasOn = function centerCanvasOn(center) {
     var canvasCenter = this.getPointFromNormalizedCoords(.5, .5);
     var translation = new Point(
-      Math.round(canvasCenter.x - center.x),
-      Math.round(canvasCenter.y - center.y)
+      Math.round(this.translation.x + canvasCenter.x - center.x),
+      Math.round(this.translation.y + canvasCenter.y - center.y)
     );
     this.setTranslation(translation); // This will cause a the canvases to draw
   };
   this.centerDesign = function centerDesign() {
     var designRect = this.getDesignBoundingRect();
     if (designRect === null) {
-      designRect = new Rectangle(-1, -1, 1, 1);
+      var designCenter = new Point(0, 0);
+    } else {
+      var designCenter = designRect.getPointFromNormalizedCoords(.5, .5);
     }
-    var designCenter = designRect.getPointFromNormalizedCoords(.5, .5);
     this.centerCanvasOn(designCenter);
   };
   this.transformToFit = function transformToFit() {
@@ -341,7 +342,6 @@ function DrawingBoard(node) {
       scale = Math.pow(2, Math.floor(Math.log2(scale))); // Round down to power of 2
       scale = Math.min(1, scale);
       scale = Math.max(0.1, scale);
-      console.log(scale);
       this.scale = scale;
       this.commitTransforms();
     }
@@ -460,15 +460,12 @@ function DrawingBoard(node) {
       this.contexts[i].scale(this.scale, this.scale)
       this.contexts[i].translate(this.translation.x, this.translation.y)
     }
-    console.log(this.scale);
-    console.log(this.translation);
     this.drewGrid = false; // need to draw the grid again
     // Caller needs to ensure this.draw is called
   };
   this.setScale = function (s) {
     this.scale = s;
     this.commitTransforms();
-    // TODO Set translation to keep the center the same
     this.draw();
     return this;
   };
@@ -797,7 +794,7 @@ function drawingBoardMenu(board, args) {
           console.warn("No data to paste.");
       }
   });
-
+/* Not sure what this is supposed to do, but it doesn't work.
   this.addButton('Print', function (e) {
       e.preventDefault();
       const jsonArea = document.getElementById('jsonArea');
@@ -807,20 +804,28 @@ function drawingBoardMenu(board, args) {
           console.error("Element with ID 'jsonArea' not found.");
       }
   });
-
+*/
+this.addButton('Recenter', function (e) {
+  e.preventDefault();
+  board.transformToFit();
+});
 this.addButton('-', function (e) {
     e.preventDefault();
+    var oldCenter = board.getPointFromNormalizedCoords(.5, .5);
     const newScale = board.scale / SCALE_FACTOR;
     if (newScale >= 0.1) {
       board.setScale(newScale);
+      board.centerCanvasOn(oldCenter);
     }
 });
 
 this.addButton('+', function (e) {
     e.preventDefault();
+    var oldCenter = board.getPointFromNormalizedCoords(.5, .5);
     const newScale = board.scale * SCALE_FACTOR;
     if (newScale <= 10) {
       board.setScale(newScale);
+      board.centerCanvasOn(oldCenter);
     }
 });
 
