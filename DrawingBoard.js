@@ -72,6 +72,7 @@ var ON_BACKGROUND = ON_COLOR;
 var SELECT_COLOR = '#000000';
 //var SELECT_BACKGROUND = '#DDDD22';
 var SELECT_BACKGROUND = '#0009';
+const SCALE_FACTOR = 2;
 // See https://www.canva.com/colors/color-wheel/
 var drawingBoardManager;
 function buildDrawingBoards() {
@@ -116,9 +117,8 @@ There are several coordinate unit types in this file. They need some simplifying
  3. Board units: These are always 10 * canvas units (as long as board.unit stays at 10).
     Components are located by these units, such that location 1,1 is really at canvas 10,10.
     These are the units in the save file.
- 4. Component offset: These (poorly named) are percentages relative to the given component.
-    So if a component is a square at 100,100 to 200,200. Then offset 0,0 is 100,100; 1,1 is 200,200; and .5,.5 is 150,150.
-    This does seem dangerous because it could result in non-integer board units when locating connections.
+ 4. Normalized coordinates (aka offset): These are percentages relative to the given component.
+    So if a component is a square at 100,100 to 200,200. Then normalized 0,0 is 100,100; 1,1 is 200,200; and .5,.5 is 150,150.
 */
 function DrawingBoard(node) {
   var board = this; // needed for scoping
@@ -272,10 +272,24 @@ function DrawingBoard(node) {
     if (this.dragging == component) this.stopDragging();
     removeElementFromArray(this.components, component);
   }
-  this.getComponentsBoundingRect = function () {
+  this.getCanvasBoundingRect = function getCanvasBoundingRectfunction() {
+    var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
+    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
+    var rect = new Rectangle(topLeft, botRight);
+    return rect;
+  };
+  this.getPointFromNormalizedCoords = function getPointFromNormalizedCoords(xPct, yPct) {
+    var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
+    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
+    var x = Math.round(topLeft.x + (botRight.x - topLeft.x) * xPct);
+    var y = Math.round(topLeft.y + (botRight.y - topLeft.y) * yPct);
+    return new Point(x, y);
+  };
+  this.getDesignBoundingRect = function () {
     var rect = null;
     for (var i in this.components) {
       var compRect = this.components[i].getBoundingRect();
+      if (compRect == null) continue;
       if (rect == null) rect = compRect;
       else {
         if (compRect.top < rect.top) rect.top = compRect.top;
@@ -285,6 +299,47 @@ function DrawingBoard(node) {
       }
     }
     return rect;
+  };
+  this.transformToFit = function transformToFit() {
+    // Get back to no transform (easier to set scale later)
+    for (i in this.contexts) {
+      this.contexts[i].resetTransform();
+    }
+    this.scale = 1;
+    this.translation = new Point(0,0);
+    var designRect = this.getDesignBoundingRect();
+    if (designRect === null) {
+      designRect = new Rectangle(-1, -1, 1, 1);
+      scale = 1;
+    } else {
+      var canvasRect = this.getCanvasBoundingRect();
+      var scale = Math.min(
+        (canvasRect.getWidth() / designRect.getWidth()),
+        (canvasRect.getHeight() / designRect.getHeight())
+      );
+      console.log(scale);
+      // This should use SCALE_FACTOR but it's hard-coded to 2 to use log2
+      scale = Math.pow(2, Math.floor(Math.log2(scale))); // Round down to power of 2
+      scale = Math.min(1, scale);
+      scale = Math.max(0.1, scale);
+    }
+    console.log(scale);
+    for (i in this.contexts) {
+      this.contexts[i].scale(scale, scale)
+    }
+    this.scale = scale;
+    /* We now have a new canvas boundint rect, so get it again */
+    canvasRect = this.getCanvasBoundingRect();
+    var canvasCenter = this.getPointFromNormalizedCoords(.5, .5);
+    var designCenter = designRect.getPointFromNormalizedCoords(.5, .5);
+    // TODO translate canvas so design is at center
+    var translation = new Point(
+      Math.round(canvasCenter.x - designCenter.x),
+      Math.round(canvasCenter.y - designCenter.y)
+    );
+    console.log(translation);
+    this.setTranslation(translation); // This will cause a the canvases to draw
+    return;
   };
   this.draw = function () {
     var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
@@ -399,6 +454,7 @@ function DrawingBoard(node) {
         this.contexts[i].scale(this.scale / oldScale, this.scale / oldScale)
       }
     }
+    // TODO Set translation to keep the center the same
     this.drewGrid = false; // need to draw the grid again
     this.draw();
     return this;
@@ -644,8 +700,9 @@ function DrawingBoard(node) {
     }
   }
   // Initial resize to fit the current viewport
-  this.resizeCanvases();
-  this.setTranslation(new Point(155,155));
+  //this.resizeCanvases();
+  this.transformToFit();
+  //this.setTranslation(new Point(155,155));
 }
 
 /***********************************************
@@ -743,7 +800,7 @@ function drawingBoardMenu(board, args) {
 
 this.addButton('-', function (e) {
     e.preventDefault();
-    const newScale = board.scale / 1.5;
+    const newScale = board.scale / SCALE_FACTOR;
     if (newScale >= 0.1) {
       board.setScale(newScale);
     }
@@ -751,7 +808,7 @@ this.addButton('-', function (e) {
 
 this.addButton('+', function (e) {
     e.preventDefault();
-    const newScale = board.scale * 1.5;
+    const newScale = board.scale * SCALE_FACTOR;
     if (newScale <= 10) {
       board.setScale(newScale);
     }
@@ -1086,15 +1143,13 @@ var Component = Class.extend({
     coords.y = Math.round(this.y / unit);
     return coords;
   },
-  getBoundingRect: function(inCanvasUnits) {
+  getBoundingRect: function() {
     var unit;
-    if (inCanvasUnits) unit = 1;
-    else unit = this.board.unit;
-    rect = {};
-    rect.left = this.x / unit;
-    rect.top = this.y / unit;
-    rect.right = (this.x + this.getWidth()) / unit;
-    rect.bottom = (this.y + this.getHeight()) / unit;
+    var left = this.x;
+    var top = this.y;
+    var right = (this.x + this.getWidth());
+    var bottom = (this.y + this.getHeight());
+    var rect = new Rectangle(left, top, right, bottom);
     return rect;
   },
   /** Get coords relative to the Component.
@@ -1347,6 +1402,9 @@ var Wire = Component.extend({
     }
     if (distanceFromLine < 2) return true;
     else return false;
+  },
+  getBoundingRect: function getBoundingRect() {
+    return null; // Is always within others, so skip this.
   },
   draw: function (cxt) {
     if (this.sources.length == 0 || this.targets.length == 0) return;
@@ -2512,23 +2570,38 @@ function Point(x, y) {
 }
 /***********************************************
  * Rectangle function
- *
+ * In canvas units unless otherwise noted
  ***********************************************/
 function Rectangle(left, top, right, bottom) {
   if (typeof left == "number") {
-    this.topLeft = new Point(left, top);
-    this.bottomRight = new Point(right, bottom);
+    this.left = left;
+    this.top = top;
+    this.right = right;
+    this.bottom = bottom;
   } else { // expect two points
-    this.topLeft = left;
-    this.bottomRight = top;
-  }
+    this.left = left.x;
+    this.top = left.y;
+    this.right = top.x;
+    this.bottom = top.y;
+  };
   this.get = function (att) {
     return this[att];
-  }
+  };
   this.set = function (att, val) {
     this[att] = val;
     return this;
-  }
+  };
+  this.getWidth = function getWidth() {
+    return this.right - this.left;
+  };
+  this.getHeight = function getHeight() {
+    return this.bottom - this.top;
+  };
+  this.getPointFromNormalizedCoords = function getPointFromNormalizedCoords(xPct, yPct) {
+    var x = Math.round(this.left + (this.right - this.left) * xPct);
+    var y = Math.round(this.top + (this.bottom - this.top) * yPct);
+    return new Point(x, y);
+  };
 }
 
 /***********************************************
