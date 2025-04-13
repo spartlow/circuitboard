@@ -280,6 +280,9 @@ function DrawingBoard(node) {
     var rect = new Rectangle(topLeft, botRight);
     return rect;
   };
+  this.getCanvasCenter = function () {
+    return this.getPointFromNormalizedCoords(.5, .5);
+  };
   this.getPointFromNormalizedCoords = function getPointFromNormalizedCoords(xPct, yPct) {
     var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
     var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
@@ -811,6 +814,7 @@ this.addButton('Recenter', function (e) {
 });
 this.addButton('-', function (e) {
     e.preventDefault();
+    e.stopPropagation();
     var oldCenter = board.getPointFromNormalizedCoords(.5, .5);
     const newScale = board.scale / SCALE_FACTOR;
     if (newScale >= 0.1) {
@@ -821,6 +825,7 @@ this.addButton('-', function (e) {
 
 this.addButton('+', function (e) {
     e.preventDefault();
+    e.stopPropagation();
     var oldCenter = board.getPointFromNormalizedCoords(.5, .5);
     const newScale = board.scale * SCALE_FACTOR;
     if (newScale <= 10) {
@@ -881,79 +886,92 @@ function partsMenu(board) {
     board.buildingWireConnection = null;
   });
   this.addButton('Source', function (e) {
-    var comp = new Source(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new Source(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('Display', function (e) {
-    var comp = new Display(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new Display(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('Digital Display', function (e) {
-    var comp = new Display(board).setLocation(2, 2).set('displayType', 'Digital').setMaxDigits(3);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new Display(board).setLocation(canvasCenter.x, canvasCenter.y).set('displayType', 'Digital').setMaxDigits(3);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('NOT', function (e) {
-    var comp = new NotGate(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new NotGate(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('AND', function (e) {
-    var comp = new AndGate(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new AndGate(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('OR', function (e) {
-    var comp = new OrGate(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new OrGate(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('NOR', function (e) {
-    var comp = new NorGate(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new NorGate(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('NAND', function (e) {
-    var comp = new NandGate(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new NandGate(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('XOR', function (e) {
-    var comp = new XorGate(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new XorGate(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('Adder', function (e) {
-    var comp = new FullAdder(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new FullAdder(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('MUX2', function (e) {
-    var comp = new MuxGate(board).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new MuxGate(board).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('MUX4', function (e) {
-    var comp = new MuxGate(board).setNumInputs(4).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new MuxGate(board).setNumInputs(4).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('MUX8', function (e) {
-    var comp = new MuxGate(board).setNumInputs(8).setLocation(2, 2);
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new MuxGate(board).setNumInputs(8).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
@@ -2617,6 +2635,9 @@ function Rectangle(left, top, right, bottom) {
     var y = Math.round(this.top + (this.bottom - this.top) * yPct);
     return new Point(x, y);
   };
+  this.getCenter = function() {
+    return this.getPointFromNormalizedCoords(.5, .5);
+  }
 }
 
 /***********************************************
