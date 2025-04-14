@@ -891,20 +891,12 @@ function partsMenu(board) {
   this.node = document.createElement('div');
   this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 2px; right: 1px; display: inline-block;');
   this.node.classList.add('board-menu', 'board-parts-menu');
-  this.node.innerHTML = 'Parts:';
+  this.node.innerHTML = 'Boolean Parts:<br>';
   this.addButton('Wire', function (e, origBuildingWire) {
     this.toggleActive();
     board.buildingWire = this.active;
     board.buildingWireConnection = null;
   });
-/* TODO enable
-  this.addButton('Bus', function (e) {
-    this.toggleActive();
-    board.buildingWire = this.active;
-    board.buildingBus = this.active;
-    board.buildingWireConnection = null;
-  });
-*/
   this.addButton('Source', function (e) {
     var canvasCenter = board.getCanvasCenter();
     var comp = new Source(board).setLocation(canvasCenter.x, canvasCenter.y);
@@ -996,7 +988,14 @@ function partsMenu(board) {
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
-  board.node.appendChild(this.node);
+  this.node.insertAdjacentHTML( 'beforeend', '<br><br>Digital Parts:<br>');
+  this.addButton('Bus', function (e) {
+    this.toggleActive();
+    board.buildingWire = this.active;
+    board.buildingBus = this.active;
+    board.buildingWireConnection = null;
+  });
+board.node.appendChild(this.node);
 }
 /***********************************************
  * ComponentMenu
@@ -1015,7 +1014,7 @@ var ComponentMenu = function (board, parentNode) {
     this.node.appendChild(button.node);
   }
   this.node = document.createElement('div');
-  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 200px; right: 1px; display: inline-block;');
+  this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 300px; right: 1px; display: inline-block;');
   this.node.classList.add('board-menu', 'board-component-menu');
   this.component = null;
   this.update = function () {
@@ -1522,7 +1521,7 @@ var Bus = Wire.extend({
       y = Math.round((this.sources[0].y + this.targets[0].y) / 2 / this.board.unit); // pick midway point
     }
     // TBD make waypoint a component with a square or circle around the connection?
-    var corner = new DigitalConnection(this.board).setLocation(x, y);
+    var corner = new BusConnection(this.board).setLocation(x, y);
     var bus = new Bus(this.board).addSource(corner);
     if (this.targets[0]) {
       var endpoint = this.targets[0];
@@ -1679,6 +1678,64 @@ var Connection = Component.extend({
     return this._super();
   }
 }); // End Connection class
+/***********************************************
+ * BusConnection class
+ * An individual point, typically for another component
+ ***********************************************/
+var BusConnection = Connection.extend({
+  init: function (board, name) {
+    this._super(board);
+    this.className = 'BusConnection';
+    this.isDigital = true;
+  },
+  setTypeNot: function () {
+    throw "BusConnection does not implement setTypeNot"
+  },
+  containsPoint: function (x, y) {
+    return (x > this.x - 4 && x < this.x + 4 && y > this.y - 4 && y < this.y + 4);
+  },
+  setData: function (data) {
+    if (this.deleted) return this; // don't bother
+    if (data === true || data === false) throw "BusConnection expect digital input, not boolean"
+    return this._super(data);
+  },
+  addWireTo: function (target, returnBus) {
+    this.addBusTo(target, returnBus);
+  },
+  addBusTo: function (target, returnBus) {
+    var bus = new Bus(this.board).addSource(this).addTarget(target);
+    if (returnBus) return bus;
+    else return this;
+  },
+  // Inherits addSource from Connection
+  // Inherits acceptingSources from Connection
+  // Inherits acceptingTargets from Connection
+  draw: function (cxt) {
+    if (this.board.hideEmptyConnections
+      && (this.isOutput || this.sources.length == 0)
+      && (this.isInput || this.targets.length == 0)
+      && this.not == false) return;
+    if (this.closed && this.sources.length == 0) return; // don't show empty, closed connections
+    cxt.save();
+    //this._super._super(cxt); // Skip Connection's draw method
+    this._super(cxt);
+    cxt.fillStyle = '#000';
+    cxt.lineWidth = 1;
+    cxt.beginPath();
+    cxt.rect(this.x - 3, this.y - 3, 6, 6);
+    cxt.stroke();
+    cxt.fill();
+    cxt.closePath();
+    cxt.restore();
+    return this;
+  },
+  export: function () {
+    if (this.parent) return null;
+    obj = this._super();
+    delete obj.isDigital;
+    return obj;
+  }
+}); // End BusConnection class
 /***********************************************
  * Source class
  * A source of data to the board.
