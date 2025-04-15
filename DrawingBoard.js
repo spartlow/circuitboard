@@ -1459,7 +1459,8 @@ var Wire = Component.extend({
   getBoundingRect: function getBoundingRect() {
     return null; // Is always within others, so skip this.
   },
-  draw: function (cxt) {
+  draw: function (cxt, skipDrawing) {
+    if (skipDrawing) return this._super(cxt);
     if (this.sources.length == 0 || this.targets.length == 0) return;
     cxt.save();
     this._super(cxt);
@@ -1545,10 +1546,11 @@ var Bus = Wire.extend({
   draw: function (cxt) {
     if (this.sources.length == 0 || this.targets.length == 0) return;
     cxt.save();
-    this._super(cxt);
+    this._super(cxt, true);
     cxt.beginPath();
     cxt.strokeStyle = '#000';
     cxt.lineWidth = 4;
+    cxt.lineCap = "round";
     cxt.moveTo(this.sources[0].x, this.sources[0].y);
     cxt.lineTo(this.targets[0].x, this.targets[0].y);
     cxt.stroke();
@@ -1559,6 +1561,7 @@ var Bus = Wire.extend({
       cxt.strokeStyle = '#FFF';
     }
     cxt.lineWidth = 2;
+    cxt.lineCap = "butt";
     cxt.moveTo(this.sources[0].x, this.sources[0].y);
     cxt.lineTo(this.targets[0].x, this.targets[0].y);
     cxt.stroke();
@@ -1631,7 +1634,8 @@ var Connection = Component.extend({
     if (this.closed || this.isInput) return false;
     else return true;
   },
-  draw: function (cxt) {
+  draw: function (cxt, skipDrawing) {
+    if (skipDrawing) return this._super(cxt);
     if (this.board.hideEmptyConnections
       && (this.isOutput || this.sources.length == 0)
       && (this.isInput || this.targets.length == 0)
@@ -1708,6 +1712,14 @@ var BusConnection = Connection.extend({
     else return this;
   },
   // Inherits addSource from Connection
+  removeSource: function (component, noCallBack) {
+    removeElementFromArray(this.sources, component);
+    if (noCallBack !== true) {
+      component.removeTarget(this, true);
+    }
+    this.setData(0);
+    return this;
+  },
   // Inherits acceptingSources from Connection
   // Inherits acceptingTargets from Connection
   draw: function (cxt) {
@@ -1717,13 +1729,24 @@ var BusConnection = Connection.extend({
       && this.not == false) return;
     if (this.closed && this.sources.length == 0) return; // don't show empty, closed connections
     cxt.save();
-    //this._super._super(cxt); // Skip Connection's draw method
-    this._super(cxt);
+    this._super(cxt, true);
+    /*cxt.beginPath();
+    cxt.fillStyle = '#FFF';
+    cxt.rect(this.x - 2, this.y - 4, 4, 8);
+    cxt.fill();
+    cxt.closePath();
+    */
+    cxt.beginPath();
     cxt.fillStyle = '#000';
     cxt.lineWidth = 1;
-    cxt.beginPath();
-    cxt.rect(this.x - 3, this.y - 3, 6, 6);
+    cxt.moveTo(this.x - 2, this.y - 4);
+    cxt.lineTo(this.x + 2, this.y - 4);
+    cxt.lineTo(this.x + 2, this.y + 4);
+    cxt.lineTo(this.x - 2, this.y + 4);
     cxt.stroke();
+    cxt.closePath();
+    cxt.beginPath();
+    cxt.rect(this.x - 1, this.y - 4, 3, 8);
     cxt.fill();
     cxt.closePath();
     cxt.restore();
