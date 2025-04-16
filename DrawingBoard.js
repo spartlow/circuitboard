@@ -913,7 +913,7 @@ function partsMenu(board) {
   });
   this.addButton('Digital Display', function (e) {
     var canvasCenter = board.getCanvasCenter();
-    var comp = new Display(board).setLocation(canvasCenter.x, canvasCenter.y).set('displayType', 'Digital').setMaxDigits(3);
+    var comp = new Display(board).setLocation(canvasCenter.x, canvasCenter.y).set('displayType', 'Decimal').setMaxDigits(3);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
@@ -995,6 +995,13 @@ function partsMenu(board) {
     board.buildingBus = this.active;
     board.buildingWireConnection = null;
   });
+  this.addButton('Source', function (e) {
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new DigitalSource(board).setLocation(canvasCenter.x, canvasCenter.y);
+    board.select(comp);
+    board.startDragging(comp, { x: comp.x, y: comp.y });
+    board.draw();
+  });
 board.node.appendChild(this.node);
 }
 /***********************************************
@@ -1029,7 +1036,7 @@ var ComponentMenu = function (board, parentNode) {
       html += '</table>';
       this.node.innerHTML = html;
       if (comp.className == 'Source' || comp.className == 'Display') this.addButton('Change Display', function (e) {
-        var types = ['Standard', 'Logic', 'Digital'];
+        var types = ['Standard', 'Logic', 'Decimal'];
         comp.set('displayType', types[(Math.max(0, types.indexOf(comp.get('displayType'))) + 1) % types.length]);
         board.draw();
       });
@@ -1736,6 +1743,9 @@ var BusConnection = Connection.extend({
     cxt.fill();
     cxt.closePath();
     */
+   // TODO add orientation (left, top, right, bot)
+    //cxt.translate(this.x, this.y);
+    //if (this.rotation) cxt.rotate(this.rotation);
     cxt.beginPath();
     cxt.fillStyle = '#000';
     cxt.lineWidth = 1;
@@ -1780,10 +1790,11 @@ var Source = Component.extend({ // TODO make this a Gate child
   },
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
-    this.outputs['W'].setLocation(this.x + this.height / 2, this.y - 1 + this.height * 0.1, true);
-    this.outputs['X'].setLocation(this.x + this.height * 0.9 + 1, this.y + this.height / 2, true);
-    this.outputs['Y'].setLocation(this.x + this.height / 2, this.y + this.height * 0.9 + 1, true);
-    this.outputs['Z'].setLocation(this.x + this.height * 0.1 - 1, this.y + this.height / 2, true);
+    var width = this.getWidth();
+    this.outputs['W'].setLocation(this.x + width / 2, this.y - 1 + this.height * 0.1, true);
+    this.outputs['X'].setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true);
+    this.outputs['Y'].setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true);
+    this.outputs['Z'].setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true);
     return this;
   },
   addOutput: function (name) {
@@ -1816,7 +1827,8 @@ var Source = Component.extend({ // TODO make this a Gate child
       }
     }
   },
-  draw: function (cxt) {
+  draw: function (cxt, skipDrawing) {
+    if (skipDrawing) return this._super(cxt);
     cxt.save();
     this._super(cxt);
     if (this.displayType == 'Logic') {
@@ -1836,7 +1848,7 @@ var Source = Component.extend({ // TODO make this a Gate child
       cxt.font = '' + this.height * 0.6 + 'px Veranda';
       cxt.fillStyle = '#000';
       cxt.fillText(displayText, this.x + this.height * 0.3, this.y + this.height * 0.7);
-    } else if (this.displayType == 'Digital') {
+    } else if (this.displayType == 'Decimal') {
       cxt.beginPath();
       cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
       cxt.stroke();
@@ -1880,6 +1892,89 @@ var Source = Component.extend({ // TODO make this a Gate child
   export: function() {
     var obj = this._super();
     obj.displayType = this.displayType;
+    return obj;
+  },
+  import: function (obj) {
+    this._super(obj);
+    this.displayType = obj.displayType;
+  }
+});
+/***********************************************
+ * DigialSource class
+ * A source of digital data
+ ***********************************************/
+var DigitalSource = Source.extend({
+  init: function (board) {
+    this._super(board);
+    this.className = 'DigitalSource';
+    this.displayType = 'Decimal';
+    this.isDigital = true;
+    this.height = board.unit * 2;
+    this.width = board.unit * 3;
+  },
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
+    var width = this.getWidth();
+    this.outputs['W'].setLocation(this.x + width / 2, this.y - 1 + this.height * 0.1, true).setRotation(0);
+    this.outputs['X'].setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true).setRotation(90);;
+    this.outputs['Y'].setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true).setRotation(180);;
+    this.outputs['Z'].setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true).setRotation(270);;
+    return this;
+  },
+  addOutput: function (name) {
+    this.outputs[name] = new BusConnection(this.board, name);
+    this.outputs[name].setData(this.data);
+    this.outputs[name].parent = this;
+    this.outputs[name].isOutput = true;
+    return this;
+  },
+  setData: function (data) {
+    if (this.deleted) return this; // don't bother
+    if (data === true || data === false) throw "DigitalSource expects digital data, not boolean"
+    this._super(data);
+    return this;
+  },
+  // Inherits containsPoint from Source
+  onClick: function (e, coords) {
+    // Need to figure out how to set data here
+    if (coords.x >= this.x + this.height * 0.1
+      && coords.x <= this.x + this.height * 0.9
+      && coords.y >= this.y + this.height * 0.1
+      && coords.y <= this.y + this.height * 0.9) {
+      if (this.data > 0) {
+        this.setData(0);
+      } else {
+        this.setData(1);
+      }
+    }
+  },
+  draw: function (cxt) {
+    cxt.save();
+    this._super(cxt, true);
+    if (this.displayType == 'Decimal') {
+      cxt.beginPath();
+      cxt.roundRect(this.x + 2, this.y + 2, this.width - 4, this.height - 4, 2);
+      cxt.stroke();
+      cxt.fillStyle = '#EEE';
+      cxt.fill();
+      cxt.closePath();
+      cxt.font = '' + this.height * 0.6 + 'px Veranda';
+      cxt.fillStyle = '#000';
+      cxt.textAlign = "right";
+      cxt.textBaseline = "middle";
+      if (this.data > 0) {
+        var displayText = 0 + this.data;
+      } else {
+        displayText = '0';
+      }
+      cxt.fillText(displayText, this.x + this.width - 6, this.y + this.height * 0.5);
+    } else throw "Unexpected DigitalSource displayType of " + this.displayType;
+    cxt.restore();
+    return this;
+  },
+  export: function() {
+    var obj = this._super();
+    delete obj.isDigital;
     return obj;
   },
   import: function (obj) {
@@ -1960,7 +2055,7 @@ var Display = Component.extend({
   setDisplayType: function (type) {
     this.displayType = type;
     for (var x in this.inputs) {
-      if (type == 'Digital') {
+      if (type == 'Decimal') {
         this.inputs[x].set('isCollector', true);
       } else {
         this.inputs[x].set('isCollector', false);
@@ -1992,7 +2087,7 @@ var Display = Component.extend({
       cxt.font = '' + this.height * 0.6 + 'px Veranda';
       cxt.fillStyle = '#000';
       cxt.fillText(displayText, this.x + this.height * 0.3, this.y + this.height * 0.7);
-    } else if (this.displayType == 'Digital') {
+    } else if (this.displayType == 'Decimal') {
       cxt.beginPath();
       cxt.moveTo(this.x + this.width * 0.2, this.y + this.height * 0.2);
       cxt.lineTo(this.x + this.width * 0.8, this.y + this.height * 0.2);

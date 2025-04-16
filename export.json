@@ -166,7 +166,7 @@
             "x": 61,
             "y": 19,
             "height": 2,
-            "displayType": "Digital",
+            "displayType": "Decimal",
             "digits": 3
         },
         {
@@ -176,7 +176,7 @@
             "x": 62,
             "y": 42,
             "height": 2,
-            "displayType": "Digital",
+            "displayType": "Decimal",
             "digits": 3
         },
         {
