@@ -1743,20 +1743,19 @@ var BusConnection = Connection.extend({
     cxt.fill();
     cxt.closePath();
     */
-   // TODO add orientation (left, top, right, bot)
-    //cxt.translate(this.x, this.y);
-    //if (this.rotation) cxt.rotate(this.rotation);
+    cxt.translate(this.x, this.y);
+    if (this.rotation) cxt.rotate(this.rotation);
     cxt.beginPath();
     cxt.fillStyle = '#000';
     cxt.lineWidth = 1;
-    cxt.moveTo(this.x - 2, this.y - 4);
-    cxt.lineTo(this.x + 2, this.y - 4);
-    cxt.lineTo(this.x + 2, this.y + 4);
-    cxt.lineTo(this.x - 2, this.y + 4);
+    cxt.moveTo(0 - 2, 0 - 4);
+    cxt.lineTo(0 + 2, 0 - 4);
+    cxt.lineTo(0 + 2, 0 + 4);
+    cxt.lineTo(0 - 2, 0 + 4);
     cxt.stroke();
     cxt.closePath();
     cxt.beginPath();
-    cxt.rect(this.x - 1, this.y - 4, 3, 8);
+    cxt.rect(0 - 1, 0 - 4, 3, 8);
     cxt.fill();
     cxt.closePath();
     cxt.restore();
@@ -1915,10 +1914,10 @@ var DigitalSource = Source.extend({
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
     var width = this.getWidth();
-    this.outputs['W'].setLocation(this.x + width / 2, this.y - 1 + this.height * 0.1, true).setRotation(0);
-    this.outputs['X'].setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true).setRotation(90);;
-    this.outputs['Y'].setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true).setRotation(180);;
-    this.outputs['Z'].setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true).setRotation(270);;
+    this.outputs['W'].setLocation(this.x + width / 2, this.y - 1 + this.height * 0.1, true).setRotation(90);
+    this.outputs['X'].setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true).setRotation(180);;
+    this.outputs['Y'].setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true).setRotation(270);;
+    this.outputs['Z'].setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true).setRotation(0);;
     return this;
   },
   addOutput: function (name) {
@@ -1960,6 +1959,7 @@ var DigitalSource = Source.extend({
       cxt.closePath();
       cxt.font = '' + this.height * 0.6 + 'px Veranda';
       cxt.fillStyle = '#000';
+      cxt.shadowColor = '#0000';
       cxt.textAlign = "right";
       cxt.textBaseline = "middle";
       if (this.data > 0) {
