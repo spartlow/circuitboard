@@ -3,7 +3,6 @@
  * MIT Licensed.
  */
 // Inspired by base2 and Prototype
-// TODO: Add bus type for wire. Perhaps need to change data to be integer versus boolean everywhere?
 (function () {
   var initializing = false, fnTest = /xyz/.test(function () { xyz; }) ? /\b_super\b/ : /.*/;
   // The base Class implementation (does nothing)
@@ -998,7 +997,7 @@ function partsMenu(board) {
   });
   this.addButton('Source', function (e) {
     var canvasCenter = board.getCanvasCenter();
-    var comp = new DigitalSource(board).setLocation(canvasCenter.x, canvasCenter.y);
+    var comp = new Source(board).setDataType('Digital').setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
@@ -1487,7 +1486,7 @@ var Wire = Component.extend({
       cxt.moveTo(this.sources[0].x, this.sources[0].y);
       cxt.lineTo(this.targets[0].x, this.targets[0].y);
       cxt.stroke();
-  
+
       if (this.data > 0) {
         cxt.strokeStyle = ON_COLOR;
       } else {
@@ -1498,7 +1497,7 @@ var Wire = Component.extend({
       cxt.moveTo(this.sources[0].x, this.sources[0].y);
       cxt.lineTo(this.targets[0].x, this.targets[0].y);
       cxt.stroke();
-  
+
       cxt.closePath();
     } else {
       cxt.beginPath();
@@ -1511,7 +1510,7 @@ var Wire = Component.extend({
       cxt.moveTo(this.sources[0].x, this.sources[0].y);
       cxt.lineTo(this.targets[0].x, this.targets[0].y);
       cxt.stroke();
-      cxt.closePath();  
+      cxt.closePath();
     }
     cxt.restore();
     return this;
@@ -1664,7 +1663,7 @@ var Connection = Component.extend({
         cxt.strokeStyle = '#EEE';
         cxt.strokeText('' + this.name, textX, textY);
         cxt.fillText('' + this.name, textX, textY);
-      }  
+      }
     }
     cxt.restore();
     return this;
@@ -1697,21 +1696,21 @@ var Source = Component.extend({ // TODO make this a Gate child
     this.outputs['Z'].noLabel = true;
   },
   getWidth: function () {
-    if (this.dataType == 'Boolean') return board.unit * 2;
-    else return board.unit * 3;
+    if (this.dataType == 'Boolean') return this.board.unit * 2;
+    else return this.board.unit * 3;
   },
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
     var width = this.getWidth();
-    this.outputs['W'].setLocation(this.x + width / 2, this.y - 1 + this.height * 0.1, true);
-    this.outputs['X'].setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true);
-    this.outputs['Y'].setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true);
-    this.outputs['Z'].setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true);
+    this.outputs['W'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y - 1 + this.height * 0.1, true);
+    this.outputs['X'].setDataType(this.dataType).setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true);
+    this.outputs['Y'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true);
+    this.outputs['Z'].setDataType(this.dataType).setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true);
     if (this.dataType == 'Digital') {
       this.outputs['W'].setRotation(90);
       this.outputs['X'].setRotation(180);
       this.outputs['Y'].setRotation(270);
-      this.outputs['Z'].setRotation(0);  
+      this.outputs['Z'].setRotation(0);
     }
     return this;
   },
@@ -1749,130 +1748,10 @@ var Source = Component.extend({ // TODO make this a Gate child
     if (skipDrawing) return this._super(cxt);
     cxt.save();
     this._super(cxt);
-    // TODO!! copy from DigitalSource
-    if (this.displayType == 'Logic') {
+    if (this.dataType == 'Digital') {
+      var width = this.getWidth();
       cxt.beginPath();
-      cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
-      cxt.stroke();
-      cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      if (this.data > 0) {
-        cxt.fillStyle = ON_BACKGROUND;
-        var displayText = 'T';
-      } else {
-        cxt.fillStyle = '#EEE';
-        var displayText = 'F';
-      }
-      cxt.fill();
-      cxt.closePath();
-      cxt.font = '' + this.height * 0.6 + 'px Veranda';
-      cxt.fillStyle = '#000';
-      cxt.fillText(displayText, this.x + this.height * 0.3, this.y + this.height * 0.7);
-    } else if (this.displayType == 'Decimal') {
-      cxt.beginPath();
-      cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
-      cxt.stroke();
-      cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      cxt.fillStyle = '#EEE';
-      cxt.fill();
-      cxt.closePath();
-      cxt.font = '' + this.height * 0.6 + 'px Veranda';
-      cxt.fillStyle = '#000';
-      cxt.textAlign = "center";
-      cxt.textBaseline = "middle";
-      if (this.data > 0) {
-        var displayText = 0 + this.data;
-      } else {
-        displayText = '0';
-      }
-      cxt.fillText(displayText, this.x + this.height * 0.5, this.y + this.height * 0.5);
-    } else {
-      cxt.beginPath();
-      cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
-      cxt.stroke();
-      cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      cxt.fillStyle = '#EEE';
-      cxt.fill();
-      cxt.closePath();
-      cxt.beginPath();
-      cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.3, 0, 2 * Math.PI);
-      cxt.stroke();
-      cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      if (this.data > 0) {
-        cxt.fillStyle = ON_COLOR;
-      } else {
-        cxt.fillStyle = '#333';
-      }
-      cxt.fill();
-      cxt.closePath();
-    }
-    cxt.restore();
-    return this;
-  },
-  export: function() {
-    var obj = this._super();
-    obj.displayType = this.displayType;
-    return obj;
-  },
-  import: function (obj) {
-    this._super(obj);
-    this.displayType = obj.displayType;
-  }
-});
-/***********************************************
- * DigialSource class
- * A source of digital data
- ***********************************************/
-var DigitalSource = Source.extend({
-  init: function (board) {
-    this._super(board);
-    this.className = 'DigitalSource';
-    this.displayType = 'Decimal';
-    this.isDigital = true;
-    this.height = board.unit * 2;
-    this.width = board.unit * 3;
-  },
-  setLocation: function (x, y, inCanvasUnits) {
-    this._super(x, y, inCanvasUnits);
-    var width = this.getWidth();
-    this.outputs['W'].setLocation(this.x + width / 2, this.y - 1 + this.height * 0.1, true).setRotation(90);
-    this.outputs['X'].setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true).setRotation(180);;
-    this.outputs['Y'].setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true).setRotation(270);;
-    this.outputs['Z'].setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true).setRotation(0);;
-    return this;
-  },
-  addOutput: function (name) {
-    this.outputs[name] = new Connection(this.board, name).setDataType('Digital');
-    this.outputs[name].setData(this.data);
-    this.outputs[name].parent = this;
-    this.outputs[name].isOutput = true;
-    return this;
-  },
-  setData: function (data) {
-    if (this.deleted) return this; // don't bother
-    if (data === true || data === false) throw "DigitalSource expects digital data, not boolean"
-    this._super(data);
-    return this;
-  },
-  // Inherits containsPoint from Source
-  onClick: function (e, coords) {
-    // Need to figure out how to set data here
-    if (coords.x >= this.x + this.height * 0.1
-      && coords.x <= this.x + this.height * 0.9
-      && coords.y >= this.y + this.height * 0.1
-      && coords.y <= this.y + this.height * 0.9) {
-      if (this.data > 0) {
-        this.setData(0);
-      } else {
-        this.setData(1);
-      }
-    }
-  },
-  draw: function (cxt) {
-    cxt.save();
-    this._super(cxt, true);
-    if (this.displayType == 'Decimal') {
-      cxt.beginPath();
-      cxt.roundRect(this.x + 2, this.y + 2, this.width - 4, this.height - 4, 2);
+      cxt.roundRect(this.x + 2, this.y + 2, width - 4, this.height - 4, 2);
       cxt.stroke();
       cxt.fillStyle = '#EEE';
       cxt.fill();
@@ -1887,14 +1766,70 @@ var DigitalSource = Source.extend({
       } else {
         displayText = '0';
       }
-      cxt.fillText(displayText, this.x + this.width - 6, this.y + this.height * 0.5);
-    } else throw "Unexpected DigitalSource displayType of " + this.displayType;
+      cxt.fillText(displayText, this.x + width - 6, this.y + this.height * 0.5);
+    } else { // Boolean
+      if (this.displayType == 'Logic') {
+        cxt.beginPath();
+        cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
+        cxt.stroke();
+        cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
+        if (this.data > 0) {
+          cxt.fillStyle = ON_BACKGROUND;
+          var displayText = 'T';
+        } else {
+          cxt.fillStyle = '#EEE';
+          var displayText = 'F';
+        }
+        cxt.fill();
+        cxt.closePath();
+        cxt.font = '' + this.height * 0.6 + 'px Veranda';
+        cxt.fillStyle = '#000';
+        cxt.fillText(displayText, this.x + this.height * 0.3, this.y + this.height * 0.7);
+      } else if (this.displayType == 'Decimal') {
+        cxt.beginPath();
+        cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
+        cxt.stroke();
+        cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
+        cxt.fillStyle = '#EEE';
+        cxt.fill();
+        cxt.closePath();
+        cxt.font = '' + this.height * 0.6 + 'px Veranda';
+        cxt.fillStyle = '#000';
+        cxt.textAlign = "center";
+        cxt.textBaseline = "middle";
+        if (this.data > 0) {
+          var displayText = 0 + this.data;
+        } else {
+          displayText = '0';
+        }
+        cxt.fillText(displayText, this.x + this.height * 0.5, this.y + this.height * 0.5);
+      } else {
+        cxt.beginPath();
+        cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
+        cxt.stroke();
+        cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
+        cxt.fillStyle = '#EEE';
+        cxt.fill();
+        cxt.closePath();
+        cxt.beginPath();
+        cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.3, 0, 2 * Math.PI);
+        cxt.stroke();
+        cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
+        if (this.data > 0) {
+          cxt.fillStyle = ON_COLOR;
+        } else {
+          cxt.fillStyle = '#333';
+        }
+        cxt.fill();
+        cxt.closePath();
+      }
+    }
     cxt.restore();
     return this;
   },
   export: function() {
     var obj = this._super();
-    delete obj.isDigital;
+    obj.displayType = this.displayType;
     return obj;
   },
   import: function (obj) {
@@ -1902,7 +1837,6 @@ var DigitalSource = Source.extend({
     this.displayType = obj.displayType;
   }
 });
-// TODO: Make ParentComponent class that has inputs and outputs so Component class doesn't need to know about it.
 /***********************************************
  * Display class
  * A display, which shows the value of data
