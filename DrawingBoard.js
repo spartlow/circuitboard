@@ -1622,14 +1622,14 @@ var Connection = Component.extend({
       cxt.beginPath();
       cxt.fillStyle = '#000';
       cxt.lineWidth = 1;
-      cxt.moveTo(0 - 2, 0 - 4);
-      cxt.lineTo(0 + 2, 0 - 4);
-      cxt.lineTo(0 + 2, 0 + 4);
-      cxt.lineTo(0 - 2, 0 + 4);
+      cxt.moveTo(0 - 1, 0 - 4);
+      cxt.lineTo(0 + 3, 0 - 4);
+      cxt.lineTo(0 + 3, 0 + 4);
+      cxt.lineTo(0 - 1, 0 + 4);
       cxt.stroke();
       cxt.closePath();
       cxt.beginPath();
-      cxt.rect(0 - 1, 0 - 4, 3, 8);
+      cxt.rect(0, 0 - 4, 3, 8);
       cxt.fill();
       cxt.closePath();
     } else {
@@ -1702,10 +1702,10 @@ var Source = Component.extend({ // TODO make this a Gate child
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
     var width = this.getWidth();
-    this.outputs['W'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y - 1 + this.height * 0.1, true);
-    this.outputs['X'].setDataType(this.dataType).setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true);
-    this.outputs['Y'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true);
-    this.outputs['Z'].setDataType(this.dataType).setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true);
+    this.outputs['W'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y, true);
+    this.outputs['X'].setDataType(this.dataType).setLocation(this.x + width, this.y + this.height / 2, true);
+    this.outputs['Y'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y + this.height, true);
+    this.outputs['Z'].setDataType(this.dataType).setLocation(this.x, this.y + this.height / 2, true);
     if (this.dataType == 'Digital') {
       this.outputs['W'].setRotation(90);
       this.outputs['X'].setRotation(180);
