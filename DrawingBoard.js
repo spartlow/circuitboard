@@ -551,7 +551,7 @@ function DrawingBoard(node) {
               var from = board.selected;
               var to = board.buildingWireConnection;
             } else throw "Can't build wire here!";
-            if (board.buildingBus) new Bus(board).addSource(from).addTarget(to);
+            if (board.buildingBus) new Wire(board).setDataType('Digital').addSource(from).addTarget(to);
             else new Wire(board).addSource(from).addTarget(to);
             board.buildingWireConnection = null; // build a new wire
           } else {
@@ -1420,8 +1420,8 @@ var Wire = Component.extend({
       y = Math.round((this.sources[0].y + this.targets[0].y) / 2 / this.board.unit); // pick midway point
     }
     // TBD make waypoint a component with a square or circle around the connection?
-    var corner = new Connection(this.board).setLocation(x, y);
-    var wire = new Wire(this.board).addSource(corner);
+    var corner = new Connection(this.board).setDataType(this.dataType).setLocation(x, y);
+    var wire = new Wire(this.board).setDataType(this.dataType).addSource(corner);
     if (this.targets[0]) {
       var endpoint = this.targets[0];
       this.removeTarget(endpoint);
@@ -1479,17 +1479,40 @@ var Wire = Component.extend({
     if (this.sources.length == 0 || this.targets.length == 0) return;
     cxt.save();
     this._super(cxt);
-    cxt.beginPath();
-    cxt.lineWidth = 1;
-    if (this.data > 0) {
-      cxt.strokeStyle = ON_COLOR;
-    } else {
+    if (this.dataType == 'Digital') {
+      cxt.beginPath();
       cxt.strokeStyle = '#000';
+      cxt.lineWidth = 4;
+      cxt.lineCap = "round";
+      cxt.moveTo(this.sources[0].x, this.sources[0].y);
+      cxt.lineTo(this.targets[0].x, this.targets[0].y);
+      cxt.stroke();
+  
+      if (this.data > 0) {
+        cxt.strokeStyle = ON_COLOR;
+      } else {
+        cxt.strokeStyle = '#FFF';
+      }
+      cxt.lineWidth = 2;
+      cxt.lineCap = "butt";
+      cxt.moveTo(this.sources[0].x, this.sources[0].y);
+      cxt.lineTo(this.targets[0].x, this.targets[0].y);
+      cxt.stroke();
+  
+      cxt.closePath();
+    } else {
+      cxt.beginPath();
+      cxt.lineWidth = 1;
+      if (this.data > 0) {
+        cxt.strokeStyle = ON_COLOR;
+      } else {
+        cxt.strokeStyle = '#000';
+      }
+      cxt.moveTo(this.sources[0].x, this.sources[0].y);
+      cxt.lineTo(this.targets[0].x, this.targets[0].y);
+      cxt.stroke();
+      cxt.closePath();  
     }
-    cxt.moveTo(this.sources[0].x, this.sources[0].y);
-    cxt.lineTo(this.targets[0].x, this.targets[0].y);
-    cxt.stroke();
-    cxt.closePath();
     cxt.restore();
     return this;
   },
@@ -1520,74 +1543,7 @@ var Wire = Component.extend({
     return obj;
   }
 }); // End Wire
-/***********************************************
- * Bus class
- * Connects and transmits digital data between components
- ***********************************************/
-var Bus = Wire.extend({
-  init: function (board) {
-    this._super(board);
-    this.className = 'Bus';
-    this.dim = 8;
-  },
-  // inherit setData from Wire
-  addWaypoint: function (x, y, returnWaypoint) {
-    if (x == null || y == null) {
-      x = Math.round((this.sources[0].x + this.targets[0].x) / 2 / this.board.unit); // pick midway point
-      y = Math.round((this.sources[0].y + this.targets[0].y) / 2 / this.board.unit); // pick midway point
-    }
-    // TBD make waypoint a component with a square or circle around the connection?
-    var corner = new Connection(this.board).setDataType('Digital').setLocation(x, y);
-    var bus = new Bus(this.board).addSource(corner);
-    if (this.targets[0]) {
-      var endpoint = this.targets[0];
-      this.removeTarget(endpoint);
-      bus.addTarget(endpoint);
-    }
-    this.addTarget(corner);
-    if (returnWaypoint) return corner;
-    else return this;
-  },
-  addTarget: function (component, noCallBack) {
-    //if (!component.isDigital) throw "Bus can only connect to digital source"
-    return this._super(component, noCallBack);
-  },
-  addSource: function (component, noCallBack) {
-    //if (!component.isDigital) throw "Bus can only connect to digital source"
-    return this._super(component, noCallBack);
-  },
-  // Inherit containsPoint from Wire
-  // Inherit getBoundingRect from Wire
-  draw: function (cxt) {
-    if (this.sources.length == 0 || this.targets.length == 0) return;
-    cxt.save();
-    this._super(cxt, true);
-    cxt.beginPath();
-    cxt.strokeStyle = '#000';
-    cxt.lineWidth = 4;
-    cxt.lineCap = "round";
-    cxt.moveTo(this.sources[0].x, this.sources[0].y);
-    cxt.lineTo(this.targets[0].x, this.targets[0].y);
-    cxt.stroke();
 
-    if (this.data > 0) {
-      cxt.strokeStyle = ON_COLOR;
-    } else {
-      cxt.strokeStyle = '#FFF';
-    }
-    cxt.lineWidth = 2;
-    cxt.lineCap = "butt";
-    cxt.moveTo(this.sources[0].x, this.sources[0].y);
-    cxt.lineTo(this.targets[0].x, this.targets[0].y);
-    cxt.stroke();
-
-    cxt.closePath();
-    cxt.restore();
-    return this;
-  },
-  // Inherit export from Wire
-  // Inherit import from Wire
-}); // End Bus
 /***********************************************
  * Connection class
  * An individual point, typically for another component
@@ -1629,11 +1585,7 @@ var Connection = Component.extend({
     return this._super(data);
   },
   addWireTo: function (target, returnWire) {
-    if (this.dataType == 'Boolean') {
-      var wire = new Wire(this.board).addSource(this).addTarget(target);
-    } else {
-      var wire = new Bus(this.board).addSource(this).addTarget(target);
-    }
+    var wire = new Wire(this.board).setDataType(this.dataType).addSource(this).addTarget(target);
     if (returnWire) return wire;
     else return this;
   },
@@ -1722,95 +1674,18 @@ var Connection = Component.extend({
     return this._super();
   }
 }); // End Connection class
-/***********************************************
- * BusConnection class
- * An individual point, typically for another component
- ***********************************************/
-var BusConnection = Connection.extend({
-  init: function (board, name) {
-    this._super(board);
-    this.className = 'BusConnection';
-    this.isDigital = true;
-  },
-  setTypeNot: function () {
-    throw "BusConnection does not implement setTypeNot"
-  },
-  containsPoint: function (x, y) {
-    return (x > this.x - 4 && x < this.x + 4 && y > this.y - 4 && y < this.y + 4);
-  },
-  setData: function (data) {
-    if (this.deleted) return this; // don't bother
-    if (data === true || data === false) throw "BusConnection expect digital input, not boolean"
-    return this._super(data);
-  },
-  addWireTo: function (target, returnBus) {
-    this.addBusTo(target, returnBus);
-  },
-  addBusTo: function (target, returnBus) {
-    var bus = new Bus(this.board).addSource(this).addTarget(target);
-    if (returnBus) return bus;
-    else return this;
-  },
-  // Inherits addSource from Connection
-  removeSource: function (component, noCallBack) {
-    removeElementFromArray(this.sources, component);
-    if (noCallBack !== true) {
-      component.removeTarget(this, true);
-    }
-    this.setData(0);
-    return this;
-  },
-  // Inherits acceptingSources from Connection
-  // Inherits acceptingTargets from Connection
-  draw: function (cxt) {
-    if (this.board.hideEmptyConnections
-      && (this.isOutput || this.sources.length == 0)
-      && (this.isInput || this.targets.length == 0)
-      && this.not == false) return;
-    if (this.closed && this.sources.length == 0) return; // don't show empty, closed connections
-    cxt.save();
-    this._super(cxt, true);
-    /*cxt.beginPath();
-    cxt.fillStyle = '#FFF';
-    cxt.rect(this.x - 2, this.y - 4, 4, 8);
-    cxt.fill();
-    cxt.closePath();
-    */
-    cxt.translate(this.x, this.y);
-    if (this.rotation) cxt.rotate(this.rotation);
-    cxt.beginPath();
-    cxt.fillStyle = '#000';
-    cxt.lineWidth = 1;
-    cxt.moveTo(0 - 2, 0 - 4);
-    cxt.lineTo(0 + 2, 0 - 4);
-    cxt.lineTo(0 + 2, 0 + 4);
-    cxt.lineTo(0 - 2, 0 + 4);
-    cxt.stroke();
-    cxt.closePath();
-    cxt.beginPath();
-    cxt.rect(0 - 1, 0 - 4, 3, 8);
-    cxt.fill();
-    cxt.closePath();
-    cxt.restore();
-    return this;
-  },
-  export: function () {
-    if (this.parent) return null;
-    obj = this._super();
-    delete obj.isDigital;
-    return obj;
-  }
-}); // End BusConnection class
+
 /***********************************************
  * Source class
  * A source of data to the board.
  ***********************************************/
 var Source = Component.extend({ // TODO make this a Gate child
-  init: function (board, dataType='Boolean') {
+  init: function (board) {
     this._super(board);
     this.className = 'Source';
-    this.dataType = dataType; // 'Boolean', 'Digital'
+    this.displayType = 'Standard'; // Standard, Logic, Decimal
     this.height = board.unit * 2;
+    // Width is calculated based on the dataType
     this.outputs = {};
     this.addOutput('W');
     this.outputs['W'].noLabel = true;
@@ -1821,6 +1696,10 @@ var Source = Component.extend({ // TODO make this a Gate child
     this.addOutput('Z');
     this.outputs['Z'].noLabel = true;
   },
+  getWidth: function () {
+    if (this.dataType == 'Boolean') return board.unit * 2;
+    else return board.unit * 3;
+  },
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
     var width = this.getWidth();
@@ -1828,10 +1707,16 @@ var Source = Component.extend({ // TODO make this a Gate child
     this.outputs['X'].setLocation(this.x + width * 0.9 + 1, this.y + this.height / 2, true);
     this.outputs['Y'].setLocation(this.x + width / 2, this.y + this.height * 0.9 + 1, true);
     this.outputs['Z'].setLocation(this.x + width * 0.1 - 1, this.y + this.height / 2, true);
+    if (this.dataType == 'Digital') {
+      this.outputs['W'].setRotation(90);
+      this.outputs['X'].setRotation(180);
+      this.outputs['Y'].setRotation(270);
+      this.outputs['Z'].setRotation(0);  
+    }
     return this;
   },
   addOutput: function (name) {
-    this.outputs[name] = new Connection(this.board, name);
+    this.outputs[name] = new Connection(this.board, name).setDataType(this.dataType).setLocation(0, 0, true);
     this.outputs[name].setData(this.data);
     this.outputs[name].parent = this;
     this.outputs[name].isOutput = true;
@@ -1846,7 +1731,7 @@ var Source = Component.extend({ // TODO make this a Gate child
     return this;
   },
   containsPoint: function (x, y) {
-    return (x >= this.x && x <= this.x + this.height && y >= this.y && y <= this.y + this.height);
+    return (x >= this.x && x <= this.x + this.height && y >= this.y && y <= this.y + this.getWidth());
   },
   onClick: function (e, coords) {
     if (coords.x >= this.x + this.height * 0.1
@@ -1864,6 +1749,7 @@ var Source = Component.extend({ // TODO make this a Gate child
     if (skipDrawing) return this._super(cxt);
     cxt.save();
     this._super(cxt);
+    // TODO!! copy from DigitalSource
     if (this.displayType == 'Logic') {
       cxt.beginPath();
       cxt.arc(this.x + this.height * 0.5, this.y + this.height * 0.5, this.height * 0.45, 0, 2 * Math.PI);
