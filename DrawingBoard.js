@@ -1002,6 +1002,13 @@ function partsMenu(board) {
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
+  this.addButton('Display', function (e) {
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new Display(board).setDataType('Digital').setLocation(canvasCenter.x, canvasCenter.y);
+    board.select(comp);
+    board.startDragging(comp, { x: comp.x, y: comp.y });
+    board.draw();
+  });
 board.node.appendChild(this.node);
 }
 /***********************************************
@@ -1846,7 +1853,7 @@ var Display = Component.extend({
     this._super(board);
     this.className = 'Display';
     this.height = board.unit * 2;
-    this.width = this.height;
+    // Width is calculated based on dataType
     this.displayType = 'Standard';
     this.addSetter('displayType', this.setDisplayType);
     this.digits = 1;
@@ -1860,31 +1867,40 @@ var Display = Component.extend({
     this.addInput('D');
     this.inputs['D'].noLabel = true;
   },
+  getWidth: function () {
+    if (this.dataType == 'Boolean') return this.board.unit * 2;
+    else return this.board.unit * 3;
+  },
   setData: function (data) {
     return this._super(data);
   },
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
-    this.inputs['A'].setLocation(this.x + this.width * 0.2 - 1, this.y + this.height / 2, true);
-    this.inputs['B'].setLocation(this.x + this.width / 2, this.y - 1 + this.height * 0.2, true);
-    this.inputs['C'].setLocation(this.x + this.width * 0.8 + 1, this.y + this.height / 2, true);
-    this.inputs['D'].setLocation(this.x + this.width / 2, this.y + this.height * 0.8 + 1, true);
+    var width = this.getWidth();
+    this.inputs['A'].setDataType(this.dataType).setLocation(this.x, this.y + this.height / 2, true);
+    this.inputs['B'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y, true);
+    this.inputs['C'].setDataType(this.dataType).setLocation(this.x + width, this.y + this.height / 2, true);
+    this.inputs['D'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y + this.height, true);
+    if (this.dataType == 'Digital') {
+      this.inputs['A'].setRotation(0);
+      this.inputs['B'].setRotation(90);
+      this.inputs['C'].setRotation(180);
+      this.inputs['D'].setRotation(270);
+    }
     return this;
   },
-  setMaxDigits: function (d) {
+  setMaxDigits: function (d) { // TODO Remove this?? I don't like collector type either.
     if (d > 1) this.isDigital = true;
     this.digits = d;
-    this.width = this.height + (this.board.unit * (this.digits - 1));
     this.setLocation(this.x, this.y, true); // reset input connections
     return this;
   },
   setHeight: function (h) {
     this.height = this.board.unit * h;
-    this.width = this.height + (this.board.unit * (this.digits - 1));
     return this;
   },
   addInput: function (name, returnInput) {
-    this.inputs[name] = new Connection(this.board, name);
+    this.inputs[name] = new Connection(this.board, name).setDataType(this.dataType);
     this.inputs[name].parent = this;
     this.inputs[name].addTarget(this, true);
     this.inputs[name].isInput = true;
@@ -1904,7 +1920,8 @@ var Display = Component.extend({
     return this._super(component);
   },
   containsPoint: function (x, y) {
-    return (x >= this.x && x <= this.x + this.height && y >= this.y && y <= this.y + this.height);
+    var width = this.getWidth();
+    return (x >= this.x && x <= this.x + width && y >= this.y && y <= this.y + this.height);
   },
   setDisplayType: function (type) {
     this.displayType = type;
@@ -1918,73 +1935,95 @@ var Display = Component.extend({
     return this;
   },
   draw: function (cxt) {
+    var width = this.getWidth();
     cxt.save();
     this._super(cxt);
-    if (this.displayType == 'Logic') {
+    if (this.dataType == 'Digital') {
+      var width = this.getWidth();
       cxt.beginPath();
-      cxt.moveTo(this.x + this.height * 0.2, this.y + this.height * 0.2);
-      cxt.lineTo(this.x + this.height * 0.8, this.y + this.height * 0.2);
-      cxt.lineTo(this.x + this.height * 0.8, this.y + this.height * 0.8);
-      cxt.lineTo(this.x + this.height * 0.2, this.y + this.height * 0.8);
-      cxt.lineTo(this.x + this.height * 0.2, this.y + this.height * 0.2);
+      cxt.rect(this.x + 2, this.y + 2, width - 4, this.height - 4);
       cxt.stroke();
-      cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      if (this.data > 0) {
-        cxt.fillStyle = ON_BACKGROUND;
-        var displayText = 'T';
-      } else {
-        cxt.fillStyle = '#EEE';
-        var displayText = 'F';
-      }
-      cxt.fill();
-      cxt.closePath();
-      cxt.font = '' + this.height * 0.6 + 'px Veranda';
-      cxt.fillStyle = '#000';
-      cxt.fillText(displayText, this.x + this.height * 0.3, this.y + this.height * 0.7);
-    } else if (this.displayType == 'Decimal') {
-      cxt.beginPath();
-      cxt.moveTo(this.x + this.width * 0.2, this.y + this.height * 0.2);
-      cxt.lineTo(this.x + this.width * 0.8, this.y + this.height * 0.2);
-      cxt.lineTo(this.x + this.width * 0.8, this.y + this.height * 0.8);
-      cxt.lineTo(this.x + this.width * 0.2, this.y + this.height * 0.8);
-      cxt.lineTo(this.x + this.width * 0.2, this.y + this.height * 0.2);
-      cxt.stroke();
-      cxt.moveTo(this.x + 1 + this.width / 2, this.y + this.height / 2);
       cxt.fillStyle = '#EEE';
       cxt.fill();
       cxt.closePath();
       cxt.font = '' + this.height * 0.6 + 'px Veranda';
       cxt.fillStyle = '#000';
-      cxt.textAlign = "end";
-      var displayText = 0 + this.data;
-      cxt.fillText(displayText, this.x + this.width * 0.7, this.y + this.height * 0.7);
+      cxt.shadowColor = '#0000';
+      cxt.textAlign = "right";
+      cxt.textBaseline = "middle";
+      if (this.data > 0) {
+        var displayText = 0 + this.data;
+      } else {
+        displayText = '0';
+      }
+      cxt.fillText(displayText, this.x + width - 6, this.y + this.height * 0.5);
     } else {
-      cxt.beginPath();
-      cxt.moveTo(this.x + this.height * 0.1, this.y + this.height * 0.1);
-      cxt.lineTo(this.x + this.height * 0.9, this.y + this.height * 0.1);
-      cxt.lineTo(this.x + this.height * 0.9, this.y + this.height * 0.9);
-      cxt.lineTo(this.x + this.height * 0.1, this.y + this.height * 0.9);
-      cxt.lineTo(this.x + this.height * 0.1, this.y + this.height * 0.1);
-      cxt.stroke();
-      cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      cxt.fillStyle = '#EEE';
-      cxt.fill();
-      cxt.closePath();
-      cxt.beginPath();
-      cxt.moveTo(this.x + this.height * 0.3, this.y + this.height * 0.3);
-      cxt.lineTo(this.x + this.height * 0.7, this.y + this.height * 0.3);
-      cxt.lineTo(this.x + this.height * 0.7, this.y + this.height * 0.7);
-      cxt.lineTo(this.x + this.height * 0.3, this.y + this.height * 0.7);
-      cxt.lineTo(this.x + this.height * 0.3, this.y + this.height * 0.3);
-      cxt.stroke();
-      cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
-      if (this.data > 0) {
-        cxt.fillStyle = ON_COLOR;
+      if (this.displayType == 'Logic') {
+        cxt.beginPath();
+        cxt.moveTo(this.x + this.height * 0.2, this.y + this.height * 0.2);
+        cxt.lineTo(this.x + this.height * 0.8, this.y + this.height * 0.2);
+        cxt.lineTo(this.x + this.height * 0.8, this.y + this.height * 0.8);
+        cxt.lineTo(this.x + this.height * 0.2, this.y + this.height * 0.8);
+        cxt.lineTo(this.x + this.height * 0.2, this.y + this.height * 0.2);
+        cxt.stroke();
+        cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
+        if (this.data > 0) {
+          cxt.fillStyle = ON_BACKGROUND;
+          var displayText = 'T';
+        } else {
+          cxt.fillStyle = '#EEE';
+          var displayText = 'F';
+        }
+        cxt.fill();
+        cxt.closePath();
+        cxt.font = '' + this.height * 0.6 + 'px Veranda';
+        cxt.fillStyle = '#000';
+        cxt.fillText(displayText, this.x + this.height * 0.3, this.y + this.height * 0.7);
+      } else if (this.displayType == 'Decimal') {
+        cxt.beginPath();
+        cxt.moveTo(this.x + width * 0.2, this.y + this.height * 0.2);
+        cxt.lineTo(this.x + width * 0.8, this.y + this.height * 0.2);
+        cxt.lineTo(this.x + width * 0.8, this.y + this.height * 0.8);
+        cxt.lineTo(this.x + width * 0.2, this.y + this.height * 0.8);
+        cxt.lineTo(this.x + width * 0.2, this.y + this.height * 0.2);
+        cxt.stroke();
+        cxt.moveTo(this.x + 1 + width / 2, this.y + this.height / 2);
+        cxt.fillStyle = '#EEE';
+        cxt.fill();
+        cxt.closePath();
+        cxt.font = '' + this.height * 0.6 + 'px Veranda';
+        cxt.fillStyle = '#000';
+        cxt.textAlign = "end";
+        var displayText = 0 + this.data;
+        cxt.fillText(displayText, this.x + width * 0.7, this.y + this.height * 0.7);
       } else {
-        cxt.fillStyle = '#333';
+        cxt.beginPath();
+        cxt.moveTo(this.x + this.height * 0.1, this.y + this.height * 0.1);
+        cxt.lineTo(this.x + this.height * 0.9, this.y + this.height * 0.1);
+        cxt.lineTo(this.x + this.height * 0.9, this.y + this.height * 0.9);
+        cxt.lineTo(this.x + this.height * 0.1, this.y + this.height * 0.9);
+        cxt.lineTo(this.x + this.height * 0.1, this.y + this.height * 0.1);
+        cxt.stroke();
+        cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
+        cxt.fillStyle = '#EEE';
+        cxt.fill();
+        cxt.closePath();
+        cxt.beginPath();
+        cxt.moveTo(this.x + this.height * 0.3, this.y + this.height * 0.3);
+        cxt.lineTo(this.x + this.height * 0.7, this.y + this.height * 0.3);
+        cxt.lineTo(this.x + this.height * 0.7, this.y + this.height * 0.7);
+        cxt.lineTo(this.x + this.height * 0.3, this.y + this.height * 0.7);
+        cxt.lineTo(this.x + this.height * 0.3, this.y + this.height * 0.3);
+        cxt.stroke();
+        cxt.moveTo(this.x + 1 + this.height / 2, this.y + this.height / 2);
+        if (this.data > 0) {
+          cxt.fillStyle = ON_COLOR;
+        } else {
+          cxt.fillStyle = '#333';
+        }
+        cxt.fill();
+        cxt.closePath();
       }
-      cxt.fill();
-      cxt.closePath();
     }
     cxt.restore();
     return this;
