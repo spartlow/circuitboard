@@ -911,13 +911,14 @@ function partsMenu(board) {
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
+  /*
   this.addButton('Digital Display', function (e) {
     var canvasCenter = board.getCanvasCenter();
     var comp = new Display(board).setLocation(canvasCenter.x, canvasCenter.y).set('displayType', 'Decimal').setMaxDigits(3);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
-  });
+  });*/
   this.addButton('NOT', function (e) {
     var canvasCenter = board.getCanvasCenter();
     var comp = new NotGate(board).setLocation(canvasCenter.x, canvasCenter.y);
@@ -1074,6 +1075,7 @@ var Component = Class.extend({
   init: function (board) {
     this.board = board;
     this.className = 'Component';
+    this.dataType = 'Boolean'; // or 'Digital'
     this.data = 0;
     this.targets = [];
     this.sources = [];
@@ -1090,6 +1092,10 @@ var Component = Class.extend({
   },
   addSetter: function (att, func) {
     this.setters[att] = func;
+  },
+  setDataType: function (type) {
+    this.dataType = type; // 'Boolean', 'Digital'
+    return this;
   },
   setLocation: function (x, y, inCanvasUnits) {
     if (inCanvasUnits) {
@@ -1145,6 +1151,8 @@ var Component = Class.extend({
   },
   setData: function (data) {
     if (this.deleted) return this; // don't bother
+    if (this.dataType == 'Digital' && (data === true || data === false)) throw "setData has wrong data type";
+//    if ((this.dataType == 'Boolean') != (data === true || data === false)) throw "setData has wrong data type";
     var oldData = this.data;
     this.data = data;
     if (this.data !== oldData) {
@@ -1529,7 +1537,7 @@ var Bus = Wire.extend({
       y = Math.round((this.sources[0].y + this.targets[0].y) / 2 / this.board.unit); // pick midway point
     }
     // TBD make waypoint a component with a square or circle around the connection?
-    var corner = new BusConnection(this.board).setLocation(x, y);
+    var corner = new Connection(this.board).setDataType('Digital').setLocation(x, y);
     var bus = new Bus(this.board).addSource(corner);
     if (this.targets[0]) {
       var endpoint = this.targets[0];
@@ -1598,11 +1606,14 @@ var Connection = Component.extend({
     this.closed = false; // this connection is open to sources
   },
   setTypeNot: function () {
+    if (this.dataType != 'Boolean') throw "Connection.setTypeNot is only for dataType Boolean";
     this.not = true;
     return this;
   },
   containsPoint: function (x, y) {
-    return (x > this.x - 2 && x < this.x + 2 && y > this.y - 2 && y < this.y + 2);
+    if (this.dataType == 'Digital') var offset = 4;
+    else var offset = 2;
+    return (x > this.x - offset && x < this.x + offset && y > this.y - offset && y < this.y + offset);
   },
   setData: function (data) {
     if (this.deleted) return this; // don't bother
@@ -1618,7 +1629,11 @@ var Connection = Component.extend({
     return this._super(data);
   },
   addWireTo: function (target, returnWire) {
-    var wire = new Wire(this.board).addSource(this).addTarget(target);
+    if (this.dataType == 'Boolean') {
+      var wire = new Wire(this.board).addSource(this).addTarget(target);
+    } else {
+      var wire = new Bus(this.board).addSource(this).addTarget(target);
+    }
     if (returnWire) return wire;
     else return this;
   },
@@ -1648,38 +1663,56 @@ var Connection = Component.extend({
       && (this.isInput || this.targets.length == 0)
       && this.not == false) return;
     if (this.closed && this.sources.length == 0) return; // don't show empty, closed connections
-    var dotSize;
     cxt.save();
     this._super(cxt);
-    if (this.not) {
-      cxt.fillStyle = '#FFF';
-      dotSize = this.board.unit / 3;
-      cxt.lineWidth = 2;
+    if (this.dataType == 'Digital') {
+      cxt.translate(this.x, this.y);
+      if (this.rotation) cxt.rotate(this.rotation);
+      cxt.beginPath();
+      cxt.fillStyle = '#000';
+      cxt.lineWidth = 1;
+      cxt.moveTo(0 - 2, 0 - 4);
+      cxt.lineTo(0 + 2, 0 - 4);
+      cxt.lineTo(0 + 2, 0 + 4);
+      cxt.lineTo(0 - 2, 0 + 4);
+      cxt.stroke();
+      cxt.closePath();
+      cxt.beginPath();
+      cxt.rect(0 - 1, 0 - 4, 3, 8);
+      cxt.fill();
+      cxt.closePath();
     } else {
-      cxt.fillStyle = '#000';
-      dotSize = 1;
-      cxt.lineWidth = .5;
-    }
-    cxt.beginPath();
-    cxt.arc(this.x, this.y, dotSize, 0, Math.PI * 2);
-    cxt.stroke();
-    cxt.fill();
-    cxt.closePath();
-    if (this.name && (this.yesLabel || (!this.board.noLabels && !this.noLabel))) {
-      cxt.fillStyle = '#000';
-      cxt.font = this.scaleY(1) + "px Veranda";
-      //cxt.lineWidth = .5;
-      if (this.labelLeft) {
-        cxt.textAlign = "right"
-        var textX = this.x - 3;
+      var dotSize;
+      if (this.not) {
+        cxt.fillStyle = '#FFF';
+        dotSize = this.board.unit / 3;
+        cxt.lineWidth = 2;
       } else {
-        cxt.textAlign = "left"
-        var textX = this.x + 3;
+        cxt.fillStyle = '#000';
+        dotSize = 1;
+        cxt.lineWidth = .5;
       }
-      var textY = this.y + 3;
-      cxt.strokeStyle = '#EEE';
-      cxt.strokeText('' + this.name, textX, textY);
-      cxt.fillText('' + this.name, textX, textY);
+      cxt.beginPath();
+      cxt.arc(this.x, this.y, dotSize, 0, Math.PI * 2);
+      cxt.stroke();
+      cxt.fill();
+      cxt.closePath();
+      if (this.name && (this.yesLabel || (!this.board.noLabels && !this.noLabel))) {
+        cxt.fillStyle = '#000';
+        cxt.font = this.scaleY(1) + "px Veranda";
+        //cxt.lineWidth = .5;
+        if (this.labelLeft) {
+          cxt.textAlign = "right"
+          var textX = this.x - 3;
+        } else {
+          cxt.textAlign = "left"
+          var textX = this.x + 3;
+        }
+        var textY = this.y + 3;
+        cxt.strokeStyle = '#EEE';
+        cxt.strokeText('' + this.name, textX, textY);
+        cxt.fillText('' + this.name, textX, textY);
+      }  
     }
     cxt.restore();
     return this;
@@ -1773,9 +1806,10 @@ var BusConnection = Connection.extend({
  * A source of data to the board.
  ***********************************************/
 var Source = Component.extend({ // TODO make this a Gate child
-  init: function (board) {
+  init: function (board, dataType='Boolean') {
     this._super(board);
     this.className = 'Source';
+    this.dataType = dataType; // 'Boolean', 'Digital'
     this.height = board.unit * 2;
     this.outputs = {};
     this.addOutput('W');
@@ -1921,7 +1955,7 @@ var DigitalSource = Source.extend({
     return this;
   },
   addOutput: function (name) {
-    this.outputs[name] = new BusConnection(this.board, name);
+    this.outputs[name] = new Connection(this.board, name).setDataType('Digital');
     this.outputs[name].setData(this.data);
     this.outputs[name].parent = this;
     this.outputs[name].isOutput = true;
