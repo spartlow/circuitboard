@@ -2830,14 +2830,18 @@ class Color {
       this.set(value);
     }
   }
-  set(value) {
+  set(value, method) {
+    if (typeof value == 'number') {
+      return this.set8bitRGB(value, method);
+    }
+    if (method) throw "Color set only expect method for integer input"
     if (value instanceof Color) {
       this.r = value.r;
       this.g = value.g;
       this.b = value.b;
       this.a = value.a;
-    }
-    if (typeof value == 'string') {
+      return this;
+    } else if (typeof value == 'string') {
       var match;
       // Type #RGB[A] - Convert it to $RRGGBB[AA] and let later code handle
       var regex = /^#?([a-f\d])([a-f\d])([a-f\d])([a-f\d])?$/i;
@@ -2880,6 +2884,8 @@ class Color {
     return int;
   }
   set8bitRGB(int, method="RRRGGGBB") {
+    int = Math.round(int);
+    if (int > 255 || int < 0) throw "8 bit color out of range";
     if (method.toUpperCase() == "RRRGGGBB") {
       const rMask = 224; // 11100000
       const gMask = 28; // 00011100
