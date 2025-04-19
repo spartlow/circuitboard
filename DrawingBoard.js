@@ -1519,11 +1519,7 @@ var Wire = Component.extend({
       cxt.lineTo(this.targets[0].x, this.targets[0].y);
       cxt.stroke();
 
-      if (this.data > 0) {
-        cxt.strokeStyle = ON_COLOR;
-      } else {
-        cxt.strokeStyle = '#FFF';
-      }
+      cxt.strokeStyle = new Color("#FFF").mix(ON_COLOR, this.data/256);
       cxt.lineWidth = 2;
       cxt.lineCap = "butt";
       cxt.moveTo(this.sources[0].x, this.sources[0].y);
@@ -2821,6 +2817,69 @@ function Rectangle(left, top, right, bottom) {
     return this.getPointFromNormalizedCoords(.5, .5);
   }
 }
+/***********************************************
+ * Color
+ ***********************************************/
+class Color {
+  constructor(value) {
+    this.r = null;
+    this.g = null;
+    this.b = null;
+    this.a = null;
+    if (value !== null && value !== undefined) {
+      this.set(value);
+    }
+  }
+  set(value) {
+    if (value instanceof Color) {
+      this.r = value.r;
+      this.g = value.g;
+      this.b = value.b;
+      this.a = value.a;
+    }
+    if (typeof value == 'string') {
+      var match;
+      // Type #RGB[A] - Convert it to $RRGGBB[AA] and let later code handle
+      var regex = /^#?([a-f\d])([a-f\d])([a-f\d])([a-f\d])?$/i;
+      value = value.replace(regex, function(m, r, g, b, a) {
+        if (a) return r + r + g + g + b + b + a + a;
+        else return r + r + g + g + b + b;
+      });
+      // Type #RRGGBB[AA]
+      match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(value);
+      if (match) {
+        this.r = parseInt(match[1], 16);
+        this.g = parseInt(match[2], 16);
+        this.b = parseInt(match[3], 16);
+        if (match[4] !== undefined) {
+          this.a = parseInt(match[4], 16) / 255;
+        } else {
+          this.a = 1;
+        }
+        return this;
+      }
+    }
+    throw "Unsupported color value: " + value;
+  }
+  mix (value, pct=.5) {
+    var other = new Color(value);
+    this.r = Math.round((this.r * (1-pct) + other.r * pct));
+    this.g = Math.round((this.g * (1-pct) + other.g * pct));
+    this.b = Math.round((this.b * (1-pct) + other.b * pct));
+    this.a = (this.a * (1-pct) + other.a * pct);
+    return this;
+  }
+  #getAlphaHex() {
+    return pad(Math.round(this.a * 255).toString(16), 2, '0');
+  }
+  toString() {
+    if (this.a < 1) var aHex = this.#getAlphaHex();
+    else aHex = '';
+    // Build hex strng prefixed by 1 (so we have leading zeros) and return the rest
+    return ("#" + (1 << 24 | this.r << 16 | this.g << 8 | this.b).toString(16).slice(1) + aHex).toUpperCase();
+  }
+}
+
 
 /***********************************************
  * pad function
