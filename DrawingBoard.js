@@ -2880,6 +2880,12 @@ class Color {
       int = Math.round(this.r / 255 * 7) << 5;
       int += Math.round(this.g / 255 * 7) << 2;
       int += Math.round(this.b / 255 * 3);
+    } else if (method.toUpperCase() == "EQUALRGB") {
+      // Gets number from 0-215
+      var scale = 6; // This is cube root of 256 rounded down.
+      int = Math.round(this.r / 255 * (scale-1)) * scale * scale;
+      int += Math.round(this.g / 255 * (scale-1)) * scale;
+      int += Math.round(this.b / 255 * (scale-1));
     } else throw "Unsupported 8bit RGB method"
     return int;
   }
@@ -2893,6 +2899,14 @@ class Color {
       this.r = ((int & rMask) >> 5) * 255 / 7;
       this.g = ((int & gMask) >> 2) * 255 / 7;
       this.b = ((int & bMask)) * 255 / 3;
+      this.a = 1;
+    } else if (method.toUpperCase() == "EQUALRGB") {
+      // Expects number from 0-215
+      //int = Math.max(215, int);
+      var scale = 6; // This is cube root of 256 rounded down.
+      this.r = Math.round(Math.round(int / scale / scale) / scale * 255);
+      this.g = Math.round((Math.round(int / scale) % scale) / scale * 255);
+      this.b = Math.round((int % scale) / scale * 255);
       this.a = 1;
     } else throw "Unsupported 8bit RGB method"
     return this;
