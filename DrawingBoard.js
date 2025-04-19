@@ -1027,6 +1027,19 @@ var ComponentMenu = function (board, parentNode) {
     }
     this.node.appendChild(button.node);
   }
+  this.addTextbox = function (attributes, action) {
+    var inputbox = {};
+    inputbox.node = document.createElement('input');
+    for (att in attributes) {
+      inputbox.node.setAttribute(att, attributes[att]);
+    }
+    inputbox.menu = this;
+    inputbox.node.classList.add('board-input');
+    inputbox.node.oninput = function (e) {
+      action.call(inputbox, e, inputbox);
+    }
+    this.node.appendChild(inputbox.node);
+  }
   this.node = document.createElement('div');
   this.node.setAttribute('style', 'z-index: 100; position: absolute; top: 300px; right: 1px; display: inline-block;');
   this.node.classList.add('board-menu', 'board-component-menu');
@@ -1062,6 +1075,13 @@ var ComponentMenu = function (board, parentNode) {
         board.startDragging(corner, { x: corner.x, y: corner.y });
         board.draw();
       });
+      if (comp.className == "Source" && comp.dataType == 'Digital') {
+        this.addTextbox({type: 'number', value: comp.data, max: 255, min: 0}, function (e, textbox) {
+          comp.setData(Number(textbox.node.value));
+          //textbox.node.value = comp.data; // In case setData adjusted the value
+          board.draw();
+        });
+      }
       this.addButton('Delete', function (e) {
         comp.delete();
         this.menu.update(); // update this menu
@@ -1146,7 +1166,7 @@ var Component = Class.extend({
     if (noCallBack !== true) {
       component.removeTarget(this, true);
     }
-    this.setData(false);
+    this.setData(0);
     return this;
   },
   inputAddedSource: function (component) {
@@ -1157,7 +1177,12 @@ var Component = Class.extend({
   },
   setData: function (data) {
     if (this.deleted) return this; // don't bother
-    if (this.dataType == 'Digital' && (data === true || data === false)) throw "setData has wrong data type";
+    if (this.dataType == 'Digital') {
+      if (data === true || data === false) throw "setData has wrong data type";
+      data = Math.round(data); // Integers only
+      if (data < 0) data = 0; // Positive only
+      else if (data > 255) data = 255; // 8 bit only
+    }
 //    if ((this.dataType == 'Boolean') != (data === true || data === false)) throw "setData has wrong data type";
     var oldData = this.data;
     this.data = data;
@@ -1740,6 +1765,7 @@ var Source = Component.extend({ // TODO make this a Gate child
     return (x >= this.x && x <= this.x + this.height && y >= this.y && y <= this.y + this.getWidth());
   },
   onClick: function (e, coords) {
+    if (this.dataType == 'Digital') return;
     if (coords.x >= this.x + this.height * 0.1
       && coords.x <= this.x + this.height * 0.9
       && coords.y >= this.y + this.height * 0.1
