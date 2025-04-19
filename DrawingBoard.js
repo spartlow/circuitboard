@@ -2873,9 +2873,9 @@ class Color {
     //
     var int;
     if (method.toUpperCase() == "RRRGGGBB") {
-      int = Math.floor(this.r / (1<<5)) << 5;
-      int += Math.floor(this.g / (1<<5)) << 2;
-      int += Math.floor(this.b / (1<<6));
+      int = Math.round(this.r / 255 * 7) << 5;
+      int += Math.round(this.g / 255 * 7) << 2;
+      int += Math.round(this.b / 255 * 3);
     } else throw "Unsupported 8bit RGB method"
     return int;
   }
@@ -2884,9 +2884,9 @@ class Color {
       const rMask = 224; // 11100000
       const gMask = 28; // 00011100
       const bMask = 3; // 00000011
-      this.r = ((int & rMask) >> 5) * (1<<5);
-      this.g = ((int & gMask) >> 2) * (1<<5);
-      this.b = ((int & bMask)) * (1<<6);
+      this.r = ((int & rMask) >> 5) * 255 / 7;
+      this.g = ((int & gMask) >> 2) * 255 / 7;
+      this.b = ((int & bMask)) * 255 / 3;
       this.a = 1;
     } else throw "Unsupported 8bit RGB method"
     return this;
