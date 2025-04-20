@@ -41,18 +41,25 @@ function colorGrid2(divId, method, numX) {
   colors = colors.sort(function(a, b) {
     var aHSV = a.getHSV();
     var bHSV = b.getHSV();
-    return ((aHSV[2]*1000000 + aHSV[1]*1000 + aHSV[0]) - (bHSV[2]*1000000 + bHSV[1]*1000 + bHSV[0]));
+    return ((aHSV.v*1000000 + aHSV.s*1000 + aHSV.h) - (bHSV.v*1000000 + bHSV.s*1000 + bHSV.h));
   });
   colors = colors.reverse();
+  var oldH = null;
+  var oldS = null;
+  var oldV = null;
   for (var i = 0; i < 256; i++) {
-    if (i % numX == 0) {
+    var hsv = colors[i].getHSV();
+    if (hsv.v != oldV || hsv.s != oldS) {
+      oldH = hsv.h;
+      oldS = hsv.s;
+      oldV = hsv.v;
       var row = document.createElement("div");
       row.setAttribute("style", "clear: both;");
       div.appendChild(row);
     }
     square = document.createElement("div");
     square.setAttribute("style", "display: inline-block; width: 16px; height: 16px; background-color: " + colors[i].toString() + ";");
-    square.setAttribute("title", colors[i].get8bitRGB(method) + " " + colors[i].toString() + " " + colors[i].getHSV().toString());
+    square.setAttribute("title", colors[i].get8bitRGB(method) + " " + colors[i].toString() + " " + JSON.stringify(hsv));
     row.appendChild(square);
   }
 }

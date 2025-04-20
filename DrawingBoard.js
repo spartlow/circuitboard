@@ -2840,6 +2840,7 @@ class Color {
       this.g = value.g;
       this.b = value.b;
       this.a = value.a;
+      this.#validateValues();
       return this;
     } else if (typeof value == 'string') {
       var match;
@@ -2860,6 +2861,7 @@ class Color {
         } else {
           this.a = 1;
         }
+        this.#validateValues();
         return this;
       }
     }
@@ -2876,14 +2878,14 @@ class Color {
   getHSV() {
     var r = this.r / 255;
     var g = this.g / 255;
-    var b = this.b / 255;  
+    var b = this.b / 255;
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     let h, s, v = max;
-  
+
     const d = max - min;
     s = max === 0 ? 0 : d / max;
-  
+
     if (max === min) {
       h = 0;
     } else {
@@ -2897,7 +2899,7 @@ class Color {
     h = Math.round(h * 360);
     s = Math.round(s * 100);
     v = Math.round(v * 100);
-    return [h, s, v];
+    return {h: h, s: s, v: v};
   }
   get8bitRGB(method="RRRGGGBB") {
     //
@@ -2929,13 +2931,21 @@ class Color {
     } else if (method.toUpperCase() == "EQUALRGB") {
       // Expects number from 0-215
       //int = Math.max(215, int);
+      if (int > 215) int = 215;
       var scale = 6; // This is cube root of 256 rounded down.
       this.r = Math.floor(Math.floor(int / scale / scale) / (scale-1) * 255);
       this.g = Math.floor((Math.floor(int / scale) % scale) / (scale-1) * 255);
       this.b = Math.round((int % scale) / (scale-1) * 255);
       this.a = 1;
     } else throw "Unsupported 8bit RGB method"
+    this.#validateValues();
     return this;
+  }
+  #validateValues() {
+    if (this.r != Math.round(this.r) || this.r < 0 || this.r > 255) "Invalid color red value";
+    if (this.g != Math.round(this.g) || this.g < 0 || this.g > 255) "Invalid color green value";
+    if (this.b != Math.round(this.b) || this.b < 0 || this.b > 255) "Invalid color blue value";
+    if (this.a < 0 || this.a > 1) "Invalid color alpha value";
   }
   #getAlphaHex() {
     return pad(Math.round(this.a * 255).toString(16), 2, '0');
