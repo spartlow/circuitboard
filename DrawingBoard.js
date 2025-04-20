@@ -2882,6 +2882,14 @@ class Color {
       (this.g - other.g) ** 2 +
       (this.b - other.b) ** 2);
   }
+  getHSVDistanceTo(value) {
+    var other = new Color(value).getHSV();
+    var me = this.getHSV();
+    return Math.sqrt((
+      me.h - other.h) ** 2 +
+      (me.s - other.s) ** 2 +
+      (me.v - other.v) ** 2);
+  }
   getHSV() {
     var r = this.r / 255;
     var g = this.g / 255;
@@ -2955,7 +2963,7 @@ class Color {
       var closestIdx = null;
       var closestDistance = null;
       for (var i = 0; i < Color.lightDark4BitPalette.length; i++) {
-        var distance = this.getRGBDistanceTo(Color.lightDark4BitPalette[i]);
+        var distance = this.getHSVDistanceTo(Color.lightDark4BitPalette[i], {h: 1, s: 10, v: 10});
         if (closestIdx===null || closestDistance >= distance) {
           closestIdx = i;
           closestDistance = distance;
@@ -2966,12 +2974,14 @@ class Color {
     return int;
   }
   set4bitRGB(int, method="LIGHTDARK") {
+    int = Math.round(int);
+    if (int > 15 || int < 0) throw "4 bit color out of range";
     if (method.toUpperCase() == "LIGHTDARK") {
       this.set(Color.lightDark4BitPalette[int]);
     } else throw "Unsupported 8bit RGB method"
     return this;
   }
-  static lightDark4BitPalette = [
+  static lightDark4BitPalette = [ // As displayed https://lospec.com/palette-list/4-bit-rgbi
     new Color("#000"), // 0 = black
     new Color("#800"), // 1 = dark red
     new Color("#080"), // 2 = dark green
