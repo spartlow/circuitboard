@@ -1009,6 +1009,13 @@ function partsMenu(board) {
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
+  this.addButton('Splitter', function (e) {
+    var canvasCenter = board.getCanvasCenter();
+    var comp = new BusSplitter(board).setLocation(canvasCenter.x, canvasCenter.y);
+    board.select(comp);
+    board.startDragging(comp, { x: comp.x, y: comp.y });
+    board.draw();
+  });
 board.node.appendChild(this.node);
 }
 /***********************************************
@@ -1646,6 +1653,7 @@ var Connection = Component.extend({
     cxt.save();
     this._super(cxt);
     if (this.bitWidth > 1) {
+      cxt.save(); // save before translation
       cxt.translate(this.x, this.y);
       if (this.rotation) cxt.rotate(this.rotation);
       cxt.beginPath();
@@ -1661,7 +1669,8 @@ var Connection = Component.extend({
       cxt.rect(0, 0 - 4, 3, 8);
       cxt.fill();
       cxt.closePath();
-    } else {
+      cxt.restore();
+    } else { // bitWidth = 1
       var dotSize;
       if (this.not) {
         cxt.fillStyle = '#FFF';
@@ -1677,22 +1686,22 @@ var Connection = Component.extend({
       cxt.stroke();
       cxt.fill();
       cxt.closePath();
-      if (this.name && (this.yesLabel || (!this.board.noLabels && !this.noLabel))) {
-        cxt.fillStyle = '#000';
-        cxt.font = this.scaleY(1) + "px Veranda";
-        //cxt.lineWidth = .5;
-        if (this.labelLeft) {
-          cxt.textAlign = "right"
-          var textX = this.x - 3;
-        } else {
-          cxt.textAlign = "left"
-          var textX = this.x + 3;
-        }
-        var textY = this.y + 3;
-        cxt.strokeStyle = '#EEE';
-        cxt.strokeText('' + this.name, textX, textY);
-        cxt.fillText('' + this.name, textX, textY);
+    }
+    if (this.name && (this.yesLabel || (!this.board.noLabels && !this.noLabel))) {
+      cxt.fillStyle = '#000';
+      cxt.font = this.scaleY(1) + "px Veranda";
+      //cxt.lineWidth = .5;
+      if (this.labelLeft) {
+        cxt.textAlign = "right"
+        var textX = this.x - 3;
+      } else {
+        cxt.textAlign = "left"
+        var textX = this.x + 3;
       }
+      var textY = this.y + 3;
+      cxt.strokeStyle = '#EEE';
+      cxt.strokeText('' + this.name, textX, textY);
+      cxt.fillText('' + this.name, textX, textY);
     }
     cxt.restore();
     return this;
@@ -2098,6 +2107,9 @@ var Gate = Component.extend({ // rename to ParentComponent???
     this.setData();
     return this;
   },
+  getNumInputs: function () {
+    return Object.keys(this.inputs).length;
+  },
   addOutput: function (name) {
     this.outputs[name] = new Connection(this.board, name);
     //this.dataFuncs[name] = dataFunc;
@@ -2106,6 +2118,9 @@ var Gate = Component.extend({ // rename to ParentComponent???
     this.outputs[name].labelLeft = true;
     this.setData(); // set datas
     return this;
+  },
+  getNumOutputs: function () {
+    return Object.keys(this.outputs).length;
   },
   containsPoint: function (x, y) {
     var width = (this.width) ? this.width : this.height; // default width to height
@@ -2617,9 +2632,6 @@ var MuxGate = Gate.extend({
     this.outputs['X'].setData(result);
     return this;
   },
-  getNumInputs: function () {
-    return Object.keys(this.inputs).length;
-  },
   setNumInputs: function (n) {
     for (var i = 0; i < n; i++) {
       if (this.getNumInputs() <= i) {
@@ -2741,6 +2753,89 @@ var MuxGate = Gate.extend({
     if (obj.numInputs) this.setNumInputs(obj.numInputs);
   }
 }); // End MuxGate
+/***********************************************
+ * BusSplitter class
+ * Connects wires to a bus
+ ***********************************************/
+var BusSplitter = Gate.extend({
+  init: function (board) {
+    this._super(board);
+    this.className = 'BusSplitter';
+    this.setWidth(3);
+    // Height is set when bit width is set
+    this.addOutput('X', true)
+    this.outputs['X'].setBitWidth(8).setRotation(180);
+    this.setBitWidth(8);
+    this.toWires = true;
+  },
+  setBitWidth: function (bitWidth) {
+    this._super(bitWidth);
+    for (var i = 0; i < bitWidth; i++) {
+      if (this.getNumInputs() <= i) {
+        this.addInput(i);
+        this.inputs[i].name = '' + 2**i;
+        this.inputs[i].yesLabel = true;
+      }
+    }
+    this.setHeight(2 + (bitWidth - 1));
+  },
+  setData: function (data) {
+    // TBD
+    if (this.deleted) return this; // don't bother
+    return this;
+  },
+  renameWires: function () {
+    for (var i = 0; i < this.getNumInputs(); i++) {
+      this.inputs[i].name = pad(i.toString(2), this.selects.length, '0');
+    }
+  },
+  setLocation: function (x, y, inCanvasUnits) {
+    this._super(x, y, inCanvasUnits);
+    var c = this.offset(1, .5); this.outputs['X'].setLocation(c.x, c.y, true)
+    var unit = this.board.unit / this.height; // percentage of height that is one board unit
+    for (var i = 0; i < this.bitWidth; i++) {
+      var c = this.offset(0, unit * (i + 1)); this.inputs[i].setLocation(c.x, c.y, true);
+    }
+    return this;
+  },
+  draw: function (cxt) {
+    var c;
+    cxt.save();
+    this._super(cxt);
+    for (var i in this.selects) {
+      this.selects[i].draw(cxt);
+    }
+    cxt.strokeStyle = '#000';
+    cxt.beginPath();
+    cxt.rect(this.x + 1, this.y + 1, this.getWidth() - 2, this.getHeight() - 2);
+    cxt.stroke();
+    cxt.fillStyle = '#EEE';
+    cxt.fill();
+    cxt.closePath();
+    cxt.save(); // save for rotation
+    cxt.beginPath();
+    cxt.fillStyle = '#000';
+    cxt.textAlign = "center";
+    cxt.textBaseline = "middle";
+    cxt.font = '' + (this.height / 4) + 'px Veranda';
+    cxt.shadowColor = "#0000"; // turn off shadow
+    cxt.translate(this.x + this.getWidth() / 2, this.y + this.getHeight() / 2);
+    cxt.closePath();
+    cxt.restore(); // restore rotation
+    cxt.restore();
+    return this;
+  },
+  export: function() {
+    var obj = this._super();
+    obj.numInputs = this.getNumInputs();
+    return obj;
+  },
+  import: function (obj) {
+    this._super(obj);
+    if (obj.numInputs) this.setNumInputs(obj.numInputs);
+  }
+}); // End BusSplitter
+
 
 /***********************************************
  * Point function
