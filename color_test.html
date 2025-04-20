@@ -19,9 +19,9 @@ function colorGrid(canvasId, method, numX) {
   colors = colors.sort(function(a, b) {
     var aHSV = a.getHSV();
     var bHSV = b.getHSV();
-    return ((a[2]*1000000 + a[1]*1000 + a[0]) - (b[2]*1000000 + b[1]*1000 + b[0]));
+    return ((aHSV[0]*1000000 + aHSV[1]*1000 + aHSV[2]) - (bHSV[0]*1000000 + bHSV[1]*1000 + bHSV[2]));
   });
-  //colors = colors.reverse();
+  colors = colors.reverse();
   for (var i = 0; i < 256; i++) {
     ctx.beginPath();
     ctx.strokeStyle = "#FFF";
@@ -32,9 +32,35 @@ function colorGrid(canvasId, method, numX) {
     ctx.closePath();
   }
 }
+function colorGrid2(divId, method, numX) {
+  var div = document.getElementById(divId);
+  colors = [];
+  for (var i = 0; i < 256; i++) {
+    colors[i] = new Color(i, method);
+  }
+  colors = colors.sort(function(a, b) {
+    var aHSV = a.getHSV();
+    var bHSV = b.getHSV();
+    return ((aHSV[2]*1000000 + aHSV[1]*1000 + aHSV[0]) - (bHSV[2]*1000000 + bHSV[1]*1000 + bHSV[0]));
+  });
+  colors = colors.reverse();
+  for (var i = 0; i < 256; i++) {
+    if (i % numX == 0) {
+      var row = document.createElement("div");
+      row.setAttribute("style", "clear: both;");
+      div.appendChild(row);
+    }
+    square = document.createElement("div");
+    square.setAttribute("style", "display: inline-block; width: 16px; height: 16px; background-color: " + colors[i].toString() + ";");
+    square.setAttribute("title", colors[i].get8bitRGB(method) + " " + colors[i].toString() + " " + colors[i].getHSV().toString());
+    row.appendChild(square);
+  }
+}
 function setup() {
-  colorGrid("canvas1", "RRRGGGBB", 4);
-  colorGrid("canvas2", "EqualRGB", 4);
+  //colorGrid("canvas1", "RRRGGGBB", 4);
+  //colorGrid("canvas2", "EqualRGB", 4);
+  colorGrid2("div1", "RRRGGGBB", 32);
+  colorGrid2("div2", "EqualRGB", 32);
 }
 //]]>
 </script>
@@ -42,8 +68,10 @@ function setup() {
 <body onload="setup();">
 <h1>Color Test</h1>
 <h2>RRRGGGBB</h2>
-<canvas id="canvas1" width="1024" height="512"></canvas>
+<div id="div1"></div>
+<canvasx id="canvas1" width="1024" height="512"></canvas>
 <h2>EqualRGB</h2>
+<div id="div2"></div>
 <canvas id="canvas2" width="1024" height="512"></canvas>
 </body>
 </html>

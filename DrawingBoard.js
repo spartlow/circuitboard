@@ -2894,6 +2894,9 @@ class Color {
       }
       h /= 6;
     }
+    h = Math.round(h * 360);
+    s = Math.round(s * 100);
+    v = Math.round(v * 100);
     return [h, s, v];
   }
   get8bitRGB(method="RRRGGGBB") {
