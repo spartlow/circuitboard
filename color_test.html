@@ -5,30 +5,45 @@
 <script src="DrawingBoard.js"></script>
 <script type="text/javascript">
 //<![CDATA[
-function setup() {
-  var canvas1 = document.getElementById("canvas1");
+function colorGrid(canvasId, method, numX) {
+  var canvas1 = document.getElementById(canvasId);
   var ctx = canvas1.getContext("2d");
   var idealMin = 32;
-  var numX = 32;
   var width = canvas1.width / numX;
   var height = Math.min(canvas1.height / (256 / numX), Math.max(idealMin, width));
   width = Math.min(width, Math.max(idealMin, height));
+  colors = [];
+  for (var i = 0; i < 256; i++) {
+    colors[i] = new Color(i, method);
+  }
+  colors = colors.sort(function(a, b) {
+    var aHSV = a.getHSV();
+    var bHSV = b.getHSV();
+    return ((a[2]*1000000 + a[1]*1000 + a[0]) - (b[2]*1000000 + b[1]*1000 + b[0]));
+  });
+  //colors = colors.reverse();
   for (var i = 0; i < 256; i++) {
     ctx.beginPath();
     ctx.strokeStyle = "#FFF";
-    ctx.fillStyle = new Color(i).toString();
+    ctx.fillStyle = colors[i].toString();
     ctx.rect((i % numX) * width, Math.floor(i / numX) * height, width, height);
     ctx.fill();
     ctx.stroke();
     ctx.closePath();
   }
-
+}
+function setup() {
+  colorGrid("canvas1", "RRRGGGBB", 4);
+  colorGrid("canvas2", "EqualRGB", 4);
 }
 //]]>
 </script>
 </head>
 <body onload="setup();">
-<h1>Color Test</h2>
+<h1>Color Test</h1>
+<h2>RRRGGGBB</h2>
 <canvas id="canvas1" width="1024" height="512"></canvas>
+<h2>EqualRGB</h2>
+<canvas id="canvas2" width="1024" height="512"></canvas>
 </body>
 </html>

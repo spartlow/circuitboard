@@ -2821,13 +2821,13 @@ function Rectangle(left, top, right, bottom) {
  * Color
  ***********************************************/
 class Color {
-  constructor(value) {
+  constructor(value, method) {
     this.r = null;
     this.g = null;
     this.b = null;
     this.a = null;
     if (value !== null && value !== undefined) {
-      this.set(value);
+      this.set(value, method);
     }
   }
   set(value, method) {
@@ -2873,6 +2873,29 @@ class Color {
     this.a = (this.a * (1-pct) + other.a * pct);
     return this;
   }
+  getHSV() {
+    var r = this.r / 255;
+    var g = this.g / 255;
+    var b = this.b / 255;  
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, v = max;
+  
+    const d = max - min;
+    s = max === 0 ? 0 : d / max;
+  
+    if (max === min) {
+      h = 0;
+    } else {
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    return [h, s, v];
+  }
   get8bitRGB(method="RRRGGGBB") {
     //
     var int;
@@ -2904,9 +2927,9 @@ class Color {
       // Expects number from 0-215
       //int = Math.max(215, int);
       var scale = 6; // This is cube root of 256 rounded down.
-      this.r = Math.round(Math.round(int / scale / scale) / scale * 255);
-      this.g = Math.round((Math.round(int / scale) % scale) / scale * 255);
-      this.b = Math.round((int % scale) / scale * 255);
+      this.r = Math.floor(Math.floor(int / scale / scale) / (scale-1) * 255);
+      this.g = Math.floor((Math.floor(int / scale) % scale) / (scale-1) * 255);
+      this.b = Math.round((int % scale) / (scale-1) * 255);
       this.a = 1;
     } else throw "Unsupported 8bit RGB method"
     return this;
