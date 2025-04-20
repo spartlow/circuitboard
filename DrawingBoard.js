@@ -550,7 +550,7 @@ function DrawingBoard(node) {
               var from = board.selected;
               var to = board.buildingWireConnection;
             } else throw "Can't build wire here!";
-            if (board.buildingBus) new Wire(board).setDataType('Digital').addSource(from).addTarget(to);
+            if (board.buildingBus) new Wire(board).setBitWidth(8).addSource(from).addTarget(to);
             else new Wire(board).addSource(from).addTarget(to);
             board.buildingWireConnection = null; // build a new wire
           } else {
@@ -997,14 +997,14 @@ function partsMenu(board) {
   });
   this.addButton('Source', function (e) {
     var canvasCenter = board.getCanvasCenter();
-    var comp = new Source(board).setDataType('Digital').setLocation(canvasCenter.x, canvasCenter.y);
+    var comp = new Source(board).setBitWidth(8).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
   });
   this.addButton('Display', function (e) {
     var canvasCenter = board.getCanvasCenter();
-    var comp = new Display(board).setDataType('Digital').setLocation(canvasCenter.x, canvasCenter.y);
+    var comp = new Display(board).setBitWidth(8).setLocation(canvasCenter.x, canvasCenter.y);
     board.select(comp);
     board.startDragging(comp, { x: comp.x, y: comp.y });
     board.draw();
@@ -1075,7 +1075,7 @@ var ComponentMenu = function (board, parentNode) {
         board.startDragging(corner, { x: corner.x, y: corner.y });
         board.draw();
       });
-      if (comp.className == "Source" && comp.dataType == 'Digital') {
+      if (comp.className == "Source" && comp.bitWidth > 1) {
         this.addTextbox({type: 'number', value: comp.data, max: 255, min: 0}, function (e, textbox) {
           comp.setData(Number(textbox.node.value));
           //textbox.node.value = comp.data; // In case setData adjusted the value
@@ -1101,7 +1101,7 @@ var Component = Class.extend({
   init: function (board) {
     this.board = board;
     this.className = 'Component';
-    this.dataType = 'Boolean'; // or 'Digital'
+    this.bitWidth = 1;
     this.data = 0;
     this.targets = [];
     this.sources = [];
@@ -1119,8 +1119,9 @@ var Component = Class.extend({
   addSetter: function (att, func) {
     this.setters[att] = func;
   },
-  setDataType: function (type) {
-    this.dataType = type; // 'Boolean', 'Digital'
+  setBitWidth: function (bitWidth) {
+    if (bitWidth != 1 && bitWidth != 8) throw "Unsupported bit width"
+    this.bitWidth = bitWidth;
     return this;
   },
   setLocation: function (x, y, inCanvasUnits) {
@@ -1177,13 +1178,13 @@ var Component = Class.extend({
   },
   setData: function (data) {
     if (this.deleted) return this; // don't bother
-    if (this.dataType == 'Digital') {
+    if (this.bitWidth > 1) {
       if (data === true || data === false) throw "setData has wrong data type";
       data = Math.round(data); // Integers only
       if (data < 0) data = 0; // Positive only
       else if (data > 255) data = 255; // 8 bit only
     }
-//    if ((this.dataType == 'Boolean') != (data === true || data === false)) throw "setData has wrong data type";
+//    if ((this.bitWidth == 1) != (data === true || data === false)) throw "setData has wrong data type";
     var oldData = this.data;
     this.data = data;
     if (this.data !== oldData) {
@@ -1451,8 +1452,8 @@ var Wire = Component.extend({
       y = Math.round((this.sources[0].y + this.targets[0].y) / 2 / this.board.unit); // pick midway point
     }
     // TBD make waypoint a component with a square or circle around the connection?
-    var corner = new Connection(this.board).setDataType(this.dataType).setLocation(x, y);
-    var wire = new Wire(this.board).setDataType(this.dataType).addSource(corner);
+    var corner = new Connection(this.board).setBitWidth(this.bitWidth).setLocation(x, y);
+    var wire = new Wire(this.board).setBitWidth(this.bitWidth).addSource(corner);
     if (this.targets[0]) {
       var endpoint = this.targets[0];
       this.removeTarget(endpoint);
@@ -1510,7 +1511,7 @@ var Wire = Component.extend({
     if (this.sources.length == 0 || this.targets.length == 0) return;
     cxt.save();
     this._super(cxt);
-    if (this.dataType == 'Digital') {
+    if (this.bitWidth > 1) {
       cxt.beginPath();
       cxt.strokeStyle = '#000';
       cxt.lineWidth = 4;
@@ -1589,12 +1590,12 @@ var Connection = Component.extend({
     this.closed = false; // this connection is open to sources
   },
   setTypeNot: function () {
-    if (this.dataType != 'Boolean') throw "Connection.setTypeNot is only for dataType Boolean";
+    if (this.bitWidth > 1) throw "Connection.setTypeNot is only for bitWidth 1";
     this.not = true;
     return this;
   },
   containsPoint: function (x, y) {
-    if (this.dataType == 'Digital') var offset = 4;
+    if (this.bitWidth > 1) var offset = 4;
     else var offset = 2;
     return (x > this.x - offset && x < this.x + offset && y > this.y - offset && y < this.y + offset);
   },
@@ -1612,7 +1613,7 @@ var Connection = Component.extend({
     return this._super(data);
   },
   addWireTo: function (target, returnWire) {
-    var wire = new Wire(this.board).setDataType(this.dataType).addSource(this).addTarget(target);
+    var wire = new Wire(this.board).setBitWidth(this.bitWidth).addSource(this).addTarget(target);
     if (returnWire) return wire;
     else return this;
   },
@@ -1644,7 +1645,7 @@ var Connection = Component.extend({
     if (this.closed && this.sources.length == 0) return; // don't show empty, closed connections
     cxt.save();
     this._super(cxt);
-    if (this.dataType == 'Digital') {
+    if (this.bitWidth > 1) {
       cxt.translate(this.x, this.y);
       if (this.rotation) cxt.rotate(this.rotation);
       cxt.beginPath();
@@ -1712,7 +1713,7 @@ var Source = Component.extend({ // TODO make this a Gate child
     this.className = 'Source';
     this.displayType = 'Standard'; // Standard, Logic, Decimal
     this.height = board.unit * 2;
-    // Width is calculated based on the dataType
+    // Width is calculated based on the bitWidth
     this.outputs = {};
     this.addOutput('W');
     this.outputs['W'].noLabel = true;
@@ -1724,17 +1725,17 @@ var Source = Component.extend({ // TODO make this a Gate child
     this.outputs['Z'].noLabel = true;
   },
   getWidth: function () {
-    if (this.dataType == 'Boolean') return this.board.unit * 2;
+    if (this.bitWidth == 1) return this.board.unit * 2;
     else return this.board.unit * 3;
   },
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
     var width = this.getWidth();
-    this.outputs['W'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y, true);
-    this.outputs['X'].setDataType(this.dataType).setLocation(this.x + width, this.y + this.height / 2, true);
-    this.outputs['Y'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y + this.height, true);
-    this.outputs['Z'].setDataType(this.dataType).setLocation(this.x, this.y + this.height / 2, true);
-    if (this.dataType == 'Digital') {
+    this.outputs['W'].setBitWidth(this.bitWidth).setLocation(this.x + width / 2, this.y, true);
+    this.outputs['X'].setBitWidth(this.bitWidth).setLocation(this.x + width, this.y + this.height / 2, true);
+    this.outputs['Y'].setBitWidth(this.bitWidth).setLocation(this.x + width / 2, this.y + this.height, true);
+    this.outputs['Z'].setBitWidth(this.bitWidth).setLocation(this.x, this.y + this.height / 2, true);
+    if (this.bitWidth > 1) {
       this.outputs['W'].setRotation(90);
       this.outputs['X'].setRotation(180);
       this.outputs['Y'].setRotation(270);
@@ -1743,7 +1744,7 @@ var Source = Component.extend({ // TODO make this a Gate child
     return this;
   },
   addOutput: function (name) {
-    this.outputs[name] = new Connection(this.board, name).setDataType(this.dataType).setLocation(0, 0, true);
+    this.outputs[name] = new Connection(this.board, name).setBitWidth(this.bitWidth).setLocation(0, 0, true);
     this.outputs[name].setData(this.data);
     this.outputs[name].parent = this;
     this.outputs[name].isOutput = true;
@@ -1761,7 +1762,7 @@ var Source = Component.extend({ // TODO make this a Gate child
     return (x >= this.x && x <= this.x + this.height && y >= this.y && y <= this.y + this.getWidth());
   },
   onClick: function (e, coords) {
-    if (this.dataType == 'Digital') return;
+    if (this.bitWidth > 1) return;
     if (coords.x >= this.x + this.height * 0.1
       && coords.x <= this.x + this.height * 0.9
       && coords.y >= this.y + this.height * 0.1
@@ -1777,7 +1778,7 @@ var Source = Component.extend({ // TODO make this a Gate child
     if (skipDrawing) return this._super(cxt);
     cxt.save();
     this._super(cxt);
-    if (this.dataType == 'Digital') {
+    if (this.bitWidth > 1) {
       var width = this.getWidth();
       cxt.beginPath();
       cxt.roundRect(this.x + 2, this.y + 2, width - 4, this.height - 4, 2);
@@ -1875,7 +1876,7 @@ var Display = Component.extend({
     this._super(board);
     this.className = 'Display';
     this.height = board.unit * 2;
-    // Width is calculated based on dataType
+    // Width is calculated based on bitWidth
     this.displayType = 'Standard';
     this.addSetter('displayType', this.setDisplayType);
     this.digits = 1;
@@ -1890,7 +1891,7 @@ var Display = Component.extend({
     this.inputs['D'].noLabel = true;
   },
   getWidth: function () {
-    if (this.dataType == 'Boolean') return this.board.unit * 2;
+    if (this.bitWidth == 1) return this.board.unit * 2;
     else return this.board.unit * 3;
   },
   setData: function (data) {
@@ -1899,11 +1900,11 @@ var Display = Component.extend({
   setLocation: function (x, y, inCanvasUnits) {
     this._super(x, y, inCanvasUnits);
     var width = this.getWidth();
-    this.inputs['A'].setDataType(this.dataType).setLocation(this.x, this.y + this.height / 2, true);
-    this.inputs['B'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y, true);
-    this.inputs['C'].setDataType(this.dataType).setLocation(this.x + width, this.y + this.height / 2, true);
-    this.inputs['D'].setDataType(this.dataType).setLocation(this.x + width / 2, this.y + this.height, true);
-    if (this.dataType == 'Digital') {
+    this.inputs['A'].setBitWidth(this.bitWidth).setLocation(this.x, this.y + this.height / 2, true);
+    this.inputs['B'].setBitWidth(this.bitWidth).setLocation(this.x + width / 2, this.y, true);
+    this.inputs['C'].setBitWidth(this.bitWidth).setLocation(this.x + width, this.y + this.height / 2, true);
+    this.inputs['D'].setBitWidth(this.bitWidth).setLocation(this.x + width / 2, this.y + this.height, true);
+    if (this.bitWidth > 1) {
       this.inputs['A'].setRotation(0);
       this.inputs['B'].setRotation(90);
       this.inputs['C'].setRotation(180);
@@ -1922,7 +1923,7 @@ var Display = Component.extend({
     return this;
   },
   addInput: function (name, returnInput) {
-    this.inputs[name] = new Connection(this.board, name).setDataType(this.dataType);
+    this.inputs[name] = new Connection(this.board, name).setBitWidth(this.bitWidth);
     this.inputs[name].parent = this;
     this.inputs[name].addTarget(this, true);
     this.inputs[name].isInput = true;
@@ -1960,7 +1961,7 @@ var Display = Component.extend({
     var width = this.getWidth();
     cxt.save();
     this._super(cxt);
-    if (this.dataType == 'Digital') {
+    if (this.bitWidth > 1) {
       var width = this.getWidth();
       cxt.beginPath();
       cxt.rect(this.x + 2, this.y + 2, width - 4, this.height - 4);
