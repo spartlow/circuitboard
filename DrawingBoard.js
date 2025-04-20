@@ -2875,6 +2875,13 @@ class Color {
     this.a = (this.a * (1-pct) + other.a * pct);
     return this;
   }
+  getRGBDistanceTo(value) {
+    var other = new Color(value);
+    return Math.sqrt((
+      this.r - other.r) ** 2 +
+      (this.g - other.g) ** 2 +
+      (this.b - other.b) ** 2);
+  }
   getHSV() {
     var r = this.r / 255;
     var g = this.g / 255;
@@ -2941,6 +2948,47 @@ class Color {
     this.#validateValues();
     return this;
   }
+  get4bitRGB(method="LIGHTDARK") {
+    //
+    var int;
+    if (method.toUpperCase() == "LIGHTDARK") {
+      var closestIdx = null;
+      var closestDistance = null;
+      for (var i = 0; i < Color.lightDark4BitPalette.length; i++) {
+        var distance = this.getRGBDistanceTo(Color.lightDark4BitPalette[i]);
+        if (closestIdx===null || closestDistance >= distance) {
+          closestIdx = i;
+          closestDistance = distance;
+        }
+      }
+      int = closestIdx;
+    } else throw "Unsupported 8bit RGB method"
+    return int;
+  }
+  set4bitRGB(int, method="LIGHTDARK") {
+    if (method.toUpperCase() == "LIGHTDARK") {
+      this.set(Color.lightDark4BitPalette[int]);
+    } else throw "Unsupported 8bit RGB method"
+    return this;
+  }
+  static lightDark4BitPalette = [
+    new Color("#000"), // 0 = black
+    new Color("#800"), // 1 = dark red
+    new Color("#080"), // 2 = dark green
+    new Color("#880"), // 3 = dark yellow
+    new Color("#008"), // 4 = dark blue
+    new Color("#808"), // 5 = dark magenta
+    new Color("#088"), // 6 = dark cyan
+    new Color("#AAA"), // 7 = light gray (dark white?)
+    new Color("#555"), // 8 = dark gray (light black?)
+    new Color("#F00"), // 9 = red
+    new Color("#0F0"), // 10 = green
+    new Color("#FF0"), // 11 = yellow
+    new Color("#00F"), // 12 = blue
+    new Color("#F0F"), // 13 = magenta
+    new Color("#0FF"), // 14 = cyan
+    new Color("#FFF")  // 15 = white
+  ];
   #validateValues() {
     if (this.r != Math.round(this.r) || this.r < 0 || this.r > 255) "Invalid color red value";
     if (this.g != Math.round(this.g) || this.g < 0 || this.g > 255) "Invalid color green value";
