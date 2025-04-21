@@ -8,15 +8,27 @@
   inherits: false;
 }
 
-div {
-  transition: --num 20s;
+@counter-style boolean {
+  system: fixed;
+  symbols: "000" "001" "010" "011" "100" "101" "110" "111";
+  suffix: " ";
+}
+
+div.counter {
+  animation: counter 10s infinite alternate ease-in-out;
   counter-reset: num var(--num);
 }
-div:hover {
-  --num: 100;
+div.counter::after {
+  content: counter(num, boolean);
 }
-div::after {
-  content: counter(num);
+
+@keyframes counter {
+  from {
+    --num: 1;
+  }
+  to {
+    --num: 8;
+  }
 }
 </style>
 </head>
