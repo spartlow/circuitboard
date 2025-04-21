@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+@property --num {
+  syntax: '<integer>';
+  initial-value: 0;
+  inherits: false;
+}
+
+div {
+  transition: --num 20s;
+  counter-reset: num var(--num);
+}
+div:hover {
+  --num: 100;
+}
+div::after {
+  content: counter(num);
+}
+</style>
+</head>
+<body>
+<h1>Drawing Board</h2>
+<div class="counter"></div>
+</body>
+</html>
