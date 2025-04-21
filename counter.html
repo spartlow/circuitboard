@@ -8,21 +8,30 @@
   inherits: false;
 }
 
-@counter-style boolean {
+div.decimal-counter {
+  animation: counter999 10s infinite alternate ease-in-out;
+  counter-reset: num var(--num);
+}
+div.decimal-counter::after {
+  content: counter(num, decimal);
+}
+
+
+@counter-style binary {
   system: fixed;
   symbols: "000" "001" "010" "011" "100" "101" "110" "111";
   suffix: " ";
 }
 
-div.counter {
-  animation: counter 10s infinite alternate ease-in-out;
+div.binary-counter {
+  animation: counter8 10s infinite alternate ease-in-out;
   counter-reset: num var(--num);
 }
-div.counter::after {
-  content: counter(num, boolean);
+div.binary-counter::after {
+  content: counter(num, binary);
 }
 
-@keyframes counter {
+@keyframes counter8 {
   from {
     --num: 1;
   }
@@ -30,10 +39,20 @@ div.counter::after {
     --num: 8;
   }
 }
+@keyframes counter999 {
+  from {
+    --num: 1;
+  }
+  to {
+    --num: 999;
+  }
+}
+
 </style>
 </head>
 <body>
 <h1>Drawing Board</h2>
-<div class="counter"></div>
+  <div class="decimal-counter"></div>
+  <div class="binary-counter"></div>
 </body>
 </html>
