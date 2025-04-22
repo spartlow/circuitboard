@@ -2,7 +2,13 @@
 <html>
 <head>
 <style>
-div.counter {
+div.auto-counter {
+  display: inline-block;
+  margin: 10px auto;
+  text-align: center;
+  padding: 5px 10px;
+  background-color: #333;
+  color: #DDD;
   font-size: 50px;
   font-family: monospace;
 }
@@ -14,31 +20,31 @@ div.counter {
 }
 
 div.decimal-counter {
-  animation: counter99 50s infinite alternate ease-in-out;
+  animation: counter99 40s infinite alternate ease-in-out;
   counter-reset: num var(--num);
 }
 div.decimal-counter::after {
-  content: counter(num, decimal2);
+  content: counter(num, decimal3);
 }
 
-@counter-style decimal2 {
-  system: fixed -1;
-  symbols: "00" "01" "02" "03" "04" "05" "06" "07" "07" "08" "09";
-  suffix: " ";
+@counter-style decimal3 {
+  system: numeric;
+  symbols: "0" "1" "2" "3" "4" "5" "6" "7" "8" "9";
+  pad: 3 "0";
 }
 
-@counter-style binary {
-  system: fixed 0;
-  symbols: "000" "001" "010" "011" "100" "101" "110" "111";
-  suffix: " ";
+@counter-style binary3 {
+  system: numeric;
+  symbols: "0" "1";
+  pad: 3 "0";
 }
 
 div.binary-counter {
-  animation: counter8 10s infinite alternate;
+  animation: counter8 10s infinite alternate ease-in;
   counter-reset: num var(--num);
 }
 div.binary-counter::after {
-  content: counter(num, binary);
+  content: counter(num, binary3);
 }
 
 @keyframes counter8 {
@@ -54,15 +60,15 @@ div.binary-counter::after {
     --num: 0;
   }
   to {
-    --num: 99;
+    --num: 999;
   }
 }
 
 </style>
 </head>
 <body>
-<h1>Drawing Board</h2>
-  <div class="counter decimal-counter"></div>
-  <div class="counter binary-counter"></div>
+<h1>Auto-counter</h2>
+  <div class="auto-counter decimal-counter"></div>
+  <div class="auto-counter binary-counter"></div>
 </body>
 </html>
