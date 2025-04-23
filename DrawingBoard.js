@@ -1727,10 +1727,88 @@ var Connection = Component.extend({
 }); // End Connection class
 
 /***********************************************
+ * Gate class
+ * Virtual class. A container of components with logic
+ * Has inputs and outputs.
+ ***********************************************/
+var Gate = Component.extend({ // rename to ParentComponent???
+  init: function (board) {
+    this._super(board);
+    this.className = 'Gate';
+    this.isGate = true;
+    this.inputs = {};
+    this.outputs = {};
+    this.data = null;
+    this.height = board.unit * 4;
+  },
+  setHeight: function (h) {
+    this.height = this.board.unit * h;
+    this.setLocation(this.x, this.y, true); // set location to adjust children
+    return this;
+  },
+  setData: function (data) {
+    //throw "Virtual function Gate.setData called."; // Can't do this until Source/Display are not gates
+    this._super(data);
+    //if (this.deleted) return this; // don't bother
+    //console.log('Gate.setData: data='+data);
+    // gates don't have data themselves
+    // but we'll reset outputs because an input changed
+    return this;
+  },
+  addInput: function (name) {
+    this.inputs[name] = new Connection(this.board, name);
+    this.inputs[name].addTarget(this);
+    this.inputs[name].parent = this;
+    this.inputs[name].isInput = true;
+    this.setData();
+    return this;
+  },
+  getNumInputs: function () {
+    return Object.keys(this.inputs).length;
+  },
+  addOutput: function (name) {
+    this.outputs[name] = new Connection(this.board, name);
+    //this.dataFuncs[name] = dataFunc;
+    this.outputs[name].parent = this;
+    this.outputs[name].isOutput = true;
+    this.outputs[name].labelLeft = true;
+    this.setData(); // set datas
+    return this;
+  },
+  getNumOutputs: function () {
+    return Object.keys(this.outputs).length;
+  },
+  containsPoint: function (x, y) {
+    var width = (this.width) ? this.width : this.height; // default width to height
+    if (this.rotation) {
+      var point = new Point(x, y);
+      point = point.getRotatedCounterclockwise(this.rotation, new Point(this.x + width / 2, this.y + this.height / 2)); // rotate along with item
+      x = point.x; y = point.y;
+    }
+    return (x >= this.x && x <= this.x + width && y >= this.y && y <= this.y + this.height); // assume a rectangle
+  },
+  draw: function (cxt) {
+    this._super(cxt);
+    for (var i in this.inputs) {
+      this.inputs[i].draw(cxt);
+    }
+    for (var i in this.outputs) {
+      this.outputs[i].draw(cxt);
+    }
+    return this;
+  },
+  toJSON: function () {
+    me = this._super();
+    //delete me.dataFuncs;
+    return me;
+  }
+}); // End Gate class
+
+/***********************************************
  * Source class
  * A source of data to the board.
  ***********************************************/
-var Source = Component.extend({ // TODO make this a Gate child
+var Source = Gate.extend({ // TODO make this a Gate child
   init: function (board) {
     this._super(board);
     this.className = 'Source';
@@ -1894,7 +1972,7 @@ var Source = Component.extend({ // TODO make this a Gate child
  * Display class
  * A display, which shows the value of data
  ***********************************************/
-var Display = Component.extend({
+var Display = Gate.extend({
   init: function (board) {
     this._super(board);
     this.className = 'Display';
@@ -2086,81 +2164,7 @@ var Display = Component.extend({
     this.setMaxDigits(obj.digits)
   }
 }); // End Display class
-/***********************************************
- * Gate class
- * Virtual class. A container of components with logic
- ***********************************************/
-var Gate = Component.extend({ // rename to ParentComponent???
-  init: function (board) {
-    this._super(board);
-    this.className = 'Gate';
-    this.isGate = true;
-    this.inputs = {};
-    this.outputs = {};
-    this.data = null;
-    this.height = board.unit * 4;
-  },
-  setHeight: function (h) {
-    this.height = this.board.unit * h;
-    this.setLocation(this.x, this.y, true); // set location to adjust children
-    return this;
-  },
-  setData: function (data) {
-    throw "Virtual function Gate.setData called.";
-    //if (this.deleted) return this; // don't bother
-    //console.log('Gate.setData: data='+data);
-    // gates don't have data themselves
-    // but we'll reset outputs because an input changed
-    return this;
-  },
-  addInput: function (name) {
-    this.inputs[name] = new Connection(this.board, name);
-    this.inputs[name].addTarget(this);
-    this.inputs[name].parent = this;
-    this.inputs[name].isInput = true;
-    this.setData();
-    return this;
-  },
-  getNumInputs: function () {
-    return Object.keys(this.inputs).length;
-  },
-  addOutput: function (name) {
-    this.outputs[name] = new Connection(this.board, name);
-    //this.dataFuncs[name] = dataFunc;
-    this.outputs[name].parent = this;
-    this.outputs[name].isOutput = true;
-    this.outputs[name].labelLeft = true;
-    this.setData(); // set datas
-    return this;
-  },
-  getNumOutputs: function () {
-    return Object.keys(this.outputs).length;
-  },
-  containsPoint: function (x, y) {
-    var width = (this.width) ? this.width : this.height; // default width to height
-    if (this.rotation) {
-      var point = new Point(x, y);
-      point = point.getRotatedCounterclockwise(this.rotation, new Point(this.x + width / 2, this.y + this.height / 2)); // rotate along with item
-      x = point.x; y = point.y;
-    }
-    return (x >= this.x && x <= this.x + width && y >= this.y && y <= this.y + this.height); // assume a rectangle
-  },
-  draw: function (cxt) {
-    this._super(cxt);
-    for (var i in this.inputs) {
-      this.inputs[i].draw(cxt);
-    }
-    for (var i in this.outputs) {
-      this.outputs[i].draw(cxt);
-    }
-    return this;
-  },
-  toJSON: function () {
-    me = this._super();
-    //delete me.dataFuncs;
-    return me;
-  }
-}); // End Gate class
+
 
 /***********************************************
  * AndGate class
