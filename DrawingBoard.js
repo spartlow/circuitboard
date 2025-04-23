@@ -71,8 +71,13 @@ var ON_BACKGROUND = ON_COLOR;
 var SELECT_COLOR = '#000000';
 //var SELECT_BACKGROUND = '#DDDD22';
 var SELECT_BACKGROUND = '#0009';
-const SCALE_FACTOR = 2;
 // See https://www.canva.com/colors/color-wheel/
+const SCALE_FACTOR = 2;
+const GRID = 0;
+const WIRES = 1;
+const COMPONENTS = 2;
+const CONNECTIONS = 3;
+
 var drawingBoardManager;
 function buildDrawingBoards() {
   if (!isCanvasSupported()) return; // do nothing if canvas isn't supported.
@@ -137,12 +142,13 @@ function DrawingBoard(node) {
   if (node.clientHeight == 0) node.style.height = '100px';
 
   this.canvases = [];
-  for (var i = 0; i < 4; i++) {
+  var layers = [GRID, WIRES, COMPONENTS, CONNECTIONS];
+  for (const layer of layers) {
     var newCanvas = document.createElement('canvas');
-    newCanvas.setAttribute('style', 'z-index: ' + (i + 1) + '; position: absolute; top: 0; left: 0;');
-    newCanvas.classList.add('board-canvas','board-canvas-' + i);
+    newCanvas.setAttribute('style', 'z-index: ' + (layer + 1) + '; position: absolute; top: 0; left: 0;');
+    newCanvas.classList.add('board-canvas','board-canvas-' + layer);
     node.appendChild(newCanvas);
-    this.canvases.push(newCanvas);
+    this.canvases[layer] = newCanvas;
   }
 
   // Resize canvases to fit the parent node
@@ -194,7 +200,7 @@ function DrawingBoard(node) {
     //const rect = canvas.getBoundingClientRect();
     //const x = event.clientX - rect.left;
     //const y = event.clientY - rect.top;
-    ctx = this.contexts[0];
+    ctx = this.contexts[GRID];
     const transform = ctx.getTransform();
     const invTransform = transform.inverse();
     var point = new Point(
@@ -206,61 +212,61 @@ function DrawingBoard(node) {
   this.drawGrid = function () {
     this.drewGrid = true;
     var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
-    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
+    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[GRID].width, this.canvases[GRID].height));
     var left = topLeft.x;
     var top = topLeft.y;
     var right = botRight.x;
     var bottom = botRight.y;
-    this.contexts[0].clearRect(left, top, right - left, bottom - top);
+    this.contexts[GRID].clearRect(left, top, right - left, bottom - top);
     if (this.noGrid) return;
     var increment = this.unit;
-    this.contexts[0].lineWidth = .5;
-    this.contexts[0].beginPath();
-    this.contexts[0].strokeStyle = '#EEE';
+    this.contexts[GRID].lineWidth = .5;
+    this.contexts[GRID].beginPath();
+    this.contexts[GRID].strokeStyle = '#EEE';
     for (var x = Math.floor(left / increment) * increment; x < right; x += increment) {
-      this.contexts[0].moveTo(x, top);
-      this.contexts[0].lineTo(x, bottom);
+      this.contexts[GRID].moveTo(x, top);
+      this.contexts[GRID].lineTo(x, bottom);
     }
     for (var y = Math.floor(top / increment) * increment; y < bottom; y += increment) {
-      this.contexts[0].moveTo(left, y);
-      this.contexts[0].lineTo(right, y);
+      this.contexts[GRID].moveTo(left, y);
+      this.contexts[GRID].lineTo(right, y);
     }
-    this.contexts[0].stroke();
-    this.contexts[0].closePath();
+    this.contexts[GRID].stroke();
+    this.contexts[GRID].closePath();
 
     /* Now draw major lines */
     var increment = this.unit * 10;
-    this.contexts[0].lineWidth = 1;
-    this.contexts[0].beginPath();
-    this.contexts[0].strokeStyle = '#CCC';
+    this.contexts[GRID].lineWidth = 1;
+    this.contexts[GRID].beginPath();
+    this.contexts[GRID].strokeStyle = '#CCC';
     for (var x = Math.floor(left / increment) * increment; x < right; x += increment) {
-      this.contexts[0].moveTo(x, top);
-      this.contexts[0].lineTo(x, bottom);
+      this.contexts[GRID].moveTo(x, top);
+      this.contexts[GRID].lineTo(x, bottom);
     }
     for (var y = Math.floor(top / increment) * increment; y < bottom; y += increment) {
-      this.contexts[0].moveTo(left, y);
-      this.contexts[0].lineTo(right, y);
+      this.contexts[GRID].moveTo(left, y);
+      this.contexts[GRID].lineTo(right, y);
     }
-    this.contexts[0].stroke();
-    this.contexts[0].closePath();
+    this.contexts[GRID].stroke();
+    this.contexts[GRID].closePath();
 
     /* Now draw major major lines */
     var increment = this.unit * 100;
-    this.contexts[0].lineWidth = 2;
-    this.contexts[0].beginPath();
-    this.contexts[0].strokeStyle = '#AAA';
-    this.contexts[0].stroke();
-    this.contexts[0].closePath();
+    this.contexts[GRID].lineWidth = 2;
+    this.contexts[GRID].beginPath();
+    this.contexts[GRID].strokeStyle = '#AAA';
+    this.contexts[GRID].stroke();
+    this.contexts[GRID].closePath();
     for (var x = Math.floor(left / increment) * increment; x < right; x += increment) {
-      this.contexts[0].moveTo(x, top);
-      this.contexts[0].lineTo(x, bottom);
+      this.contexts[GRID].moveTo(x, top);
+      this.contexts[GRID].lineTo(x, bottom);
     }
     for (var y = Math.floor(top / increment) * increment; y < bottom; y += increment) {
-      this.contexts[0].moveTo(left, y);
-      this.contexts[0].lineTo(right, y);
+      this.contexts[GRID].moveTo(left, y);
+      this.contexts[GRID].lineTo(right, y);
     }
-    this.contexts[0].stroke();
-    this.contexts[0].closePath();
+    this.contexts[GRID].stroke();
+    this.contexts[GRID].closePath();
   };
   this.addComponent = function (component) {
     this.components.push(component);
@@ -275,7 +281,7 @@ function DrawingBoard(node) {
   }
   this.getCanvasBoundingRect = function getCanvasBoundingRectfunction() {
     var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
-    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
+    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[GRID].width, this.canvases[GRID].height));
     var rect = new Rectangle(topLeft, botRight);
     return rect;
   };
@@ -284,7 +290,7 @@ function DrawingBoard(node) {
   };
   this.getPointFromNormalizedCoords = function getPointFromNormalizedCoords(xPct, yPct) {
     var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
-    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
+    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[GRID].width, this.canvases[GRID].height));
     var x = Math.round(topLeft.x + (botRight.x - topLeft.x) * xPct);
     var y = Math.round(topLeft.y + (botRight.y - topLeft.y) * yPct);
     return new Point(x, y);
@@ -353,25 +359,27 @@ function DrawingBoard(node) {
   };
   this.draw = function () {
     var topLeft = this.pixelCoordToCanvasCoord(new Point(0, 0));
-    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[0].width, this.canvases[0].height));
+    var botRight = this.pixelCoordToCanvasCoord(new Point(this.canvases[GRID].width, this.canvases[GRID].height));
     if (!this.drewGrid) this.drawGrid();
     for (i in this.contexts) {
       if (i != 0) this.contexts[i].clearRect(topLeft.x, topLeft.y, botRight.x - topLeft.x, botRight.y - topLeft.y);
     }
     for (i in this.components) {
       if (this.components[i].isWire) {
-        this.components[i].draw(this.contexts[1]);
+        this.components[i].draw(this.contexts[WIRES]);
       } else if (this.components[i].isConnection) {
-        this.components[i].draw(this.contexts[3]);
+        if (!this.components[i].parent) { // The parent will draw the child connections
+          this.components[i].draw(this.contexts[CONNECTIONS]);          
+        }
       } else {
-        this.components[i].draw(this.contexts[2]);
+        this.components[i].draw(this.contexts[COMPONENTS]);
       }
     }
     if (this.buildingWire && this.pointerCoords != null) {
       var from = {};
       var to = {};
       if (this.buildingWireConnection == null) {
-        from.x = this.pointerCoords.x + 30; //this.canvases[0].width / this.scale;
+        from.x = this.pointerCoords.x + 30; //this.canvases[GRID].width / this.scale;
         from.y = this.pointerCoords.y - 10; //0;
       } else {
         from.x = this.buildingWireConnection.x;
@@ -384,7 +392,7 @@ function DrawingBoard(node) {
         to.x = this.selected.x;
         to.y = this.selected.y;
       }
-      var cxt = this.contexts[1]; // use wire context
+      var cxt = this.contexts[WIRES]; // use wire context
       cxt.save();
       cxt.beginPath();
       if (this.buildingBus) cxt.lineWidth = 4;
@@ -1108,6 +1116,7 @@ var Component = Class.extend({
   init: function (board) {
     this.board = board;
     this.className = 'Component';
+    this.layer = COMPONENTS;
     this.bitWidth = 1;
     this.data = 0;
     this.targets = [];
@@ -1330,6 +1339,7 @@ var Component = Class.extend({
     delete me.setters;
     delete me.imported;
     delete me.importedObj;
+    delete me.layer;
     if (me.parent) {
       me.parent = me.parent.id;
     }
@@ -1394,6 +1404,7 @@ var Label = Component.extend({
   init: function (board) {
     this._super(board);
     this.className = 'Label';
+    this.layer = CONNECTIONS;
     this.height = this.board.unit;
     this.text = '';
     this.subText = '';
@@ -1413,7 +1424,8 @@ var Label = Component.extend({
   containsPoint: function (x, y) {
     return (x >= this.x && x <= this.x + this.height && y >= this.y && y <= this.y + this.height);
   },
-  draw: function (cxt) {
+  draw: function () {
+    var cxt = this.board.contexts[this.layer];
     cxt.save();
     this._super(cxt);
     cxt.beginPath();
@@ -1427,7 +1439,7 @@ var Label = Component.extend({
     cxt.restore();
     return this;
   }
-});
+}); // End Label class
 /***********************************************
  * Wire class
  * Connects and transmits data between components
@@ -1436,6 +1448,7 @@ var Wire = Component.extend({
   init: function (board) {
     this._super(board);
     this.className = 'Wire';
+    this.layer = WIRES;
     this.isWire = true;
     this.isDraggable = false;
   },
@@ -1513,8 +1526,8 @@ var Wire = Component.extend({
   getBoundingRect: function getBoundingRect() {
     return null; // Is always within others, so skip this.
   },
-  draw: function (cxt, skipDrawing) {
-    if (skipDrawing) return this._super(cxt);
+  draw: function () {
+    var cxt = this.board.contexts[this.layer];
     if (this.sources.length == 0 || this.targets.length == 0) return;
     cxt.save();
     this._super(cxt);
@@ -1587,6 +1600,7 @@ var Connection = Component.extend({
   init: function (board, name) {
     this._super(board);
     this.className = 'Connection';
+    this.layer = CONNECTIONS;
     this.isConnection = true;
     this.isCollector = false; // by default doesn't allow multiple inputs
     this.parent = null;
@@ -1643,8 +1657,8 @@ var Connection = Component.extend({
     if (this.closed || this.isInput) return false;
     else return true;
   },
-  draw: function (cxt, skipDrawing) {
-    if (skipDrawing) return this._super(cxt);
+  draw: function () {
+    var cxt = this.board.contexts[this.layer];
     if (this.board.hideEmptyConnections
       && (this.isOutput || this.sources.length == 0)
       && (this.isInput || this.targets.length == 0)
@@ -1659,14 +1673,14 @@ var Connection = Component.extend({
       cxt.beginPath();
       cxt.fillStyle = '#000';
       cxt.lineWidth = 1;
-      cxt.moveTo(0 - 1, 0 - 4);
-      cxt.lineTo(0 + 3, 0 - 4);
-      cxt.lineTo(0 + 3, 0 + 4);
-      cxt.lineTo(0 - 1, 0 + 4);
+      cxt.moveTo(0 - 2, 0 - 4);
+      cxt.lineTo(0 + 2, 0 - 4);
+      cxt.lineTo(0 + 2, 0 + 4);
+      cxt.lineTo(0 - 2, 0 + 4);
       cxt.stroke();
       cxt.closePath();
       cxt.beginPath();
-      cxt.rect(0, 0 - 4, 3, 8);
+      cxt.rect(-1, -4, 3, 8);
       cxt.fill();
       cxt.closePath();
       cxt.restore();
@@ -1690,7 +1704,7 @@ var Connection = Component.extend({
     if (this.name && (this.yesLabel || (!this.board.noLabels && !this.noLabel))) {
       cxt.fillStyle = '#000';
       cxt.font = this.scaleY(1) + "px Veranda";
-      //cxt.lineWidth = .5;
+      cxt.lineWidth = .25;
       if (this.labelLeft) {
         cxt.textAlign = "right"
         var textX = this.x - 3;
@@ -1783,8 +1797,8 @@ var Source = Component.extend({ // TODO make this a Gate child
       }
     }
   },
-  draw: function (cxt, skipDrawing) {
-    if (skipDrawing) return this._super(cxt);
+  draw: function () {
+    var cxt = this.board.contexts[this.layer];
     cxt.save();
     this._super(cxt);
     if (this.bitWidth > 1) {
@@ -1875,7 +1889,7 @@ var Source = Component.extend({ // TODO make this a Gate child
     this._super(obj);
     this.displayType = obj.displayType;
   }
-});
+}); // End Source class
 /***********************************************
  * Display class
  * A display, which shows the value of data
@@ -2146,7 +2160,7 @@ var Gate = Component.extend({ // rename to ParentComponent???
     //delete me.dataFuncs;
     return me;
   }
-});
+}); // End Gate class
 
 /***********************************************
  * AndGate class
@@ -2192,7 +2206,7 @@ var AndGate = Gate.extend({
     cxt.restore();
     return this;
   },
-});
+}); // End AndGate class
 /***********************************************
  * And3Gate class
  * AND gate with three inputs and one output
@@ -2263,7 +2277,7 @@ var OrGate = Gate.extend({
     cxt.restore();
     return this;
   },
-});
+}); // End OrGate class
 /***********************************************
  * Or3Gate class
  * OR gate with three binary inputs and one output
@@ -2346,7 +2360,7 @@ var NotGate = Gate.extend({
     cxt.restore();
     return this;
   },
-});
+}); // End NotGate class
 /***********************************************
  * NandGate class
  * NAND gate with two binary inputs and one output
@@ -2392,7 +2406,7 @@ var NandGate = Gate.extend({
     cxt.restore();
     return this;
   },
-});
+}); // End NandGate class
 /***********************************************
  * NorGate class
  * NOR gate with two binary inputs and one output
@@ -2441,7 +2455,7 @@ var NorGate = Gate.extend({
     cxt.restore();
     return this;
   },
-});
+}); // End NorGate class
 /***********************************************
  * XorGate class
  * XOR gate 2 in, 1 out
@@ -2497,7 +2511,7 @@ var XorGate = Gate.extend({
     cxt.restore();
     return this;
   },
-});
+}); // End XorGate class
 /***********************************************
  * FullAdder class
  * Full adder with three binary inputs and two outputs
@@ -2600,7 +2614,7 @@ var FullAdder = Gate.extend({
     this._super(obj);
     if (obj.dimInputs) this.setDimInputs(obj.dimInputs);
   }
-});
+}); // End FullAdder class
 /***********************************************
  * MuxGate class
  * Multiplexer gate with selectable number of inputs
