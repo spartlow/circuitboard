@@ -369,7 +369,7 @@ function DrawingBoard(node) {
         this.components[i].draw(this.contexts[WIRES]);
       } else if (this.components[i].isConnection) {
         if (!this.components[i].parent) { // The parent will draw the child connections
-          this.components[i].draw(this.contexts[CONNECTIONS]);          
+          this.components[i].draw(this.contexts[CONNECTIONS]);
         }
       } else {
         this.components[i].draw(this.contexts[COMPONENTS]);
@@ -631,6 +631,7 @@ function DrawingBoard(node) {
     delete me.dragging;
     delete me.buildingWire;
     delete me.buildingWireComponent;
+    delete md.buildingBus;
     delete me.draggedFromXDelta;
     delete me.draggedFromYDelta;
     delete me.pointerCoords;
